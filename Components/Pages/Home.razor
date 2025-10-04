@@ -1,7 +1,149 @@
 ﻿@page "/"
+@using BlazorBattControl.Data
+@using BlazorBattControl.Models
+@using Microsoft.EntityFrameworkCore
 
-<PageTitle>Home</PageTitle>
+@inject BlazorBattControlContext DbFactory
 
-<h1>Hello, world!</h1>
+@rendermode InteractiveServer
 
-Welcome to your new app.
+<style>
+    .test {
+        width: 30%;
+        height: 20px;
+        background-color: white;
+    }
+
+    .tool_tip_radio_button{
+        width: 30%;
+        height: 20px;
+    }
+
+    .radio_base[type='radio']{
+        box-sizing: border-box;
+        appearance: none;
+        background: white;
+        outline: 2px solid #333;
+        border: 3px solid white;
+        width: 45px;
+        height: 16px;
+        vertical-align: center;
+        horisontal-align: center;
+    }
+
+    .radio_1[type='radio']:checked {
+        background: Green;
+    }
+
+    .radio_2[type='radio']:checked {
+        .radio_1;
+        background: Blue;
+    }
+</style>
+
+<button class="btn btn-primary" @onclick="UpdateProduce">Save</button>
+
+<button class="btn btn-primary" @onclick="UpdateProduce">Load</button>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Period</th>
+            <th>Charge </th>
+            <th>Backup </th>
+            <th>SelfUse</th>
+            <th>Feed-In</th>
+            <th>Dis-Chg</th>
+        </tr>
+    </thead>
+    <tbody>
+        @for (int row = 0; row < 48; row++)
+        {
+            int local_row = row;
+
+            TimeOnly s_time = new TimeOnly(row / 2, (row % 2) * 30);
+            <tr>
+                <td>
+                    <label>@s_time</label>
+                </td>
+                @for (int x = 0; x < 5; x++)
+                {
+                    int _x = x;
+                    <td>
+                        <label class="tool_tip_radio_button" data-toggle="tooltip" data-placement="bottom" title="@buttionNames[x]">
+                            <input type="radio" class="radio_base radio_1"
+                                   checked="@(Select[local_row] == _x)"
+                                   name=@row onchange="@(() => OnCheckChange(local_row, _x))" />
+                        </label>
+                    </td>
+                }
+            </tr>
+        }
+    </tbody>
+</table>
+                  
+@code
+{
+    private string[] buttionNames = { "Charge ", "Backup ", "SelfUse", "Feed_In", "Dis_Chg" };
+
+    private int[] Select = new int[48];
+
+    private int scheduleId = 0;
+
+    private void OnCheckChange(int row, int x)
+    {
+        if (Select[row] != x)
+        {
+            Select[row] = x;
+        }
+    }
+
+    private async Task UpdateProduce()
+    {
+        for (int x = 0; x < 48; x++)
+        {
+            var mode = DbFactory.Mode.FirstOrDefault(m => m.TimeSlot == x && m.SchedualId == scheduleId);
+            if (mode == null)
+                mode = new BatteryMode()
+                {
+                    SchedualId = scheduleId,
+                    BattMode = Select[x],
+                    TimeSlot = x
+                    
+                };
+            else
+            {
+                if (mode.BattMode != Select[x])
+                    mode.BattMode = Select[x];
+            }
+        }
+
+        try
+        {
+            await DbFactory.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        for (int x = 0; x < 48; x++)
+        {
+            var mode = DbFactory.Mode.FirstOrDefault(m => m.TimeSlot == x);
+            if (mode == null)
+            {
+                mode = new BatteryMode()
+                {
+                    SchedualId = scheduleId,
+                    BattMode = 2,
+                    TimeSlot = x
+                };
+
+                DbFactory.Mode.Add(mode);
+            }
+            Select[x] = mode.BattMode;
+        }
+    }
+}

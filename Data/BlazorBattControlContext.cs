@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using BlazorBattControl.Models;
 
 namespace BlazorBattControl.Data
@@ -14,6 +10,7 @@ namespace BlazorBattControl.Data
         {
         }
 
-        public DbSet<BlazorBattControl.Models.Schedule> Schedule { get; set; } = default!;
+        public DbSet<Schedule> Schedule { get; set; } = default!;
+        public DbSet<BatteryMode> Mode { get; set; } = default!;
     }
 }
