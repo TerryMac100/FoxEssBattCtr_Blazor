@@ -1,0 +1,56 @@
+﻿@page "/schedules/details"
+@using Microsoft.EntityFrameworkCore
+@using BlazorBattControl.Models
+@inject IDbContextFactory<BlazorBattControl.Data.BlazorBattControlContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Details</PageTitle>
+
+<h1>Details</h1>
+
+<div>
+    <h2>Schedule</h2>
+    <hr />
+    @if (schedule is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dt class="col-sm-2">SchedualId</dt>
+            <dd class="col-sm-10">@schedule.SchedualId</dd>
+            <dt class="col-sm-2">Name</dt>
+            <dd class="col-sm-10">@schedule.Name</dd>
+            <dt class="col-sm-2">Description</dt>
+            <dd class="col-sm-10">@schedule.Description</dd>
+            <dt class="col-sm-2">MinSoc</dt>
+            <dd class="col-sm-10">@schedule.MinSoc</dd>
+            <dt class="col-sm-2">MinDischargeSoc</dt>
+            <dd class="col-sm-10">@schedule.MinDischargeSoc</dd>
+            <dt class="col-sm-2">DischargePower</dt>
+            <dd class="col-sm-10">@schedule.DischargePower</dd>
+        </dl>
+        <div>
+            <a href="@($"/schedules/edit?id={schedule.Id}")">Edit</a> |
+            <a href="@($"/schedules")">Back to List</a>
+        </div>
+    }
+</div>
+
+@code {
+    private Schedule? schedule;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        schedule = await context.Schedule.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (schedule is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+}

@@ -1,0 +1,41 @@
+﻿@page "/schedules"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using BlazorBattControl.Models
+@using BlazorBattControl.Data
+@implements IAsyncDisposable
+@inject IDbContextFactory<BlazorBattControl.Data.BlazorBattControlContext> DbFactory
+
+<PageTitle>Index</PageTitle>
+
+<h1>Index</h1>
+
+<p>
+    <a href="schedules/create">Create New</a>
+</p>
+
+<QuickGrid Class="table" Items="context.Schedule">
+    <PropertyColumn Property="schedule => schedule.SchedualId" />
+    <PropertyColumn Property="schedule => schedule.Name" />
+    <PropertyColumn Property="schedule => schedule.Description" />
+    <PropertyColumn Property="schedule => schedule.MinSoc" />
+    <PropertyColumn Property="schedule => schedule.MinDischargeSoc" />
+    <PropertyColumn Property="schedule => schedule.DischargePower" />
+
+    <TemplateColumn Context="schedule">
+        <a href="@($"schedules/edit?id={schedule.Id}")">Edit</a> |
+        <a href="@($"schedules/details?id={schedule.Id}")">Details</a> |
+        <a href="@($"schedules/delete?id={schedule.Id}")">Delete</a>
+    </TemplateColumn>
+</QuickGrid>
+
+@code {
+    private BlazorBattControlContext context = default!;
+
+    protected override void OnInitialized()
+    {
+        context = DbFactory.CreateDbContext();
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}

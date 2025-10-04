@@ -1,0 +1,14 @@
+name: "FoxESS_BattControl"
+description: "FoxESS Battery Control Application in Blazor"
+version: "1.1.0"
+slug: "fox_ess_batt_control"
+init: false
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+startup: services
+ports:
+  5005/tcp: 5005

@@ -1,0 +1,75 @@
+﻿@page "/schedules/delete"
+@using Microsoft.EntityFrameworkCore
+@using BlazorBattControl.Models
+@inject IDbContextFactory<BlazorBattControl.Data.BlazorBattControlContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Delete</PageTitle>
+
+<h1>Delete</h1>
+
+<p>Are you sure you want to delete this?</p>
+<div>
+    <h2>Schedule</h2>
+    <hr />
+    @if (schedule is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dt class="col-sm-2">SchedualId</dt>
+            <dd class="col-sm-10">@schedule.SchedualId</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Name</dt>
+            <dd class="col-sm-10">@schedule.Name</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Description</dt>
+            <dd class="col-sm-10">@schedule.Description</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">MinSoc</dt>
+            <dd class="col-sm-10">@schedule.MinSoc</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">MinDischargeSoc</dt>
+            <dd class="col-sm-10">@schedule.MinDischargeSoc</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">DischargePower</dt>
+            <dd class="col-sm-10">@schedule.DischargePower</dd>
+        </dl>
+        <EditForm method="post" Model="schedule" OnValidSubmit="DeleteSchedule" FormName="delete" Enhance>
+            <button type="submit" class="btn btn-danger" disabled="@(schedule is null)">Delete</button> |
+            <a href="/schedules">Back to List</a>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private Schedule? schedule;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        schedule = await context.Schedule.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (schedule is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    private async Task DeleteSchedule()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Schedule.Remove(schedule!);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/schedules");
+    }
+}
