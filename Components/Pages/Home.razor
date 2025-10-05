@@ -41,9 +41,7 @@
     }
 </style>
 
-<button class="btn btn-primary" @onclick="UpdateProduce">Save</button>
-
-<button class="btn btn-primary" @onclick="UpdateProduce">Load</button>
+<button class="btn btn-primary" @onclick="UpdateProduce">Send</button>
 
 <table class="table">
     <thead>
@@ -86,38 +84,32 @@
 {
     private string[] buttionNames = { "Charge ", "Backup ", "SelfUse", "Feed_In", "Dis_Chg" };
 
-    private int[] Select = new int[48];
-
     private int scheduleId = 0;
 
-    private void OnCheckChange(int row, int x)
-    {
-        if (Select[row] != x)
-        {
-            Select[row] = x;
-        }
-    }
+    private int[] Select = new int[48];
 
-    private async Task UpdateProduce()
+    private async Task OnCheckChange(int row, int x)
     {
-        for (int x = 0; x < 48; x++)
+        var mode = DbFactory.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == scheduleId);
+        if (mode != null)
         {
-            var mode = DbFactory.Mode.FirstOrDefault(m => m.TimeSlot == x && m.SchedualId == scheduleId);
-            if (mode == null)
-                mode = new BatteryMode()
-                {
-                    SchedualId = scheduleId,
-                    BattMode = Select[x],
-                    TimeSlot = x
-                    
-                };
-            else
+            if (mode.BattMode != x)
             {
-                if (mode.BattMode != Select[x])
-                    mode.BattMode = Select[x];
+                mode.BattMode = x;
+
+                try
+                {
+                    await DbFactory.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                }
             }
         }
-
+    }
+   
+    private async Task UpdateProduce()
+    {
         try
         {
             await DbFactory.SaveChangesAsync();
