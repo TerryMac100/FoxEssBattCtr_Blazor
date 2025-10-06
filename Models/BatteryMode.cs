@@ -10,6 +10,6 @@ namespace BlazorBattControl.Models
         public int Id { get; set; }
         public int SchedualId { get; set; }
         public int TimeSlot { get; set; }
-        public int BattMode { get; set; }
+        public int BattMode { get; set; } = 2; // Default to Auto
     }
 }

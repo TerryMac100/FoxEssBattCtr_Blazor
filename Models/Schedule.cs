@@ -8,7 +8,6 @@ namespace BlazorBattControl.Models
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-        public int SchedualId { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
         public int MinSoc { get; set; }

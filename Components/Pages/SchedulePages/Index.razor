@@ -33,6 +33,11 @@
     protected override void OnInitialized()
     {
         context = DbFactory.CreateDbContext();
+
+        foreach (var schedule in context.Schedule)
+        {
+            Console.WriteLine($"Schedule: {schedule.Id}");
+        }
     }
 
     public async ValueTask DisposeAsync() => await context.DisposeAsync();

@@ -41,6 +41,17 @@
     }
 </style>
 
+<select class="form-control" @bind="@schedule_Id">
+
+    <option value=""></option>
+    @foreach (var schedule in DbFactory.Schedule)
+    {
+        <option value="@schedule.Id"> @schedule.Name </option>
+    }   
+}
+
+</select>
+
 <button class="btn btn-primary" @onclick="UpdateProduce">Send</button>
 
 <table class="table">
@@ -70,7 +81,7 @@
                     <td>
                         <label class="tool_tip_radio_button" data-toggle="tooltip" data-placement="bottom" title="@buttionNames[x]">
                             <input type="radio" class="radio_base radio_1"
-                                   checked="@(Select[local_row] == _x)"
+                                   checked="@(Modes[local_row].BattMode == _x)"
                                    name=@row onchange="@(() => OnCheckChange(local_row, _x))" />
                         </label>
                     </td>
@@ -82,60 +93,76 @@
                   
 @code
 {
+    private int m_scheduleId;
+
+    public int schedule_Id
+    {
+        get { return m_scheduleId; }
+        set 
+        { 
+            m_scheduleId = value;
+            SelectionUpdated();          
+        }
+    }
+
     private string[] buttionNames = { "Charge ", "Backup ", "SelfUse", "Feed_In", "Dis_Chg" };
 
-    private int scheduleId = 0;
-
-    private int[] Select = new int[48];
+    private BatteryMode[] Modes = new BatteryMode[48];
 
     private async Task OnCheckChange(int row, int x)
     {
-        var mode = DbFactory.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == scheduleId);
-        if (mode != null)
+        if (Modes[row].BattMode != x)
         {
-            if (mode.BattMode != x)
+            var mode = DbFactory.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == m_scheduleId);
+            if (mode == null)
             {
-                mode.BattMode = x;
-
-                try
-                {
-                    await DbFactory.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                }
+                DbFactory.Mode.Add(Modes[row]);
+            }
+            Modes[row].BattMode = x;
+            
+            try
+            {
+                await DbFactory.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
             }
         }
     }
-   
-    private async Task UpdateProduce()
+
+    private void UpdateProduce()
     {
-        try
-        {
-            await DbFactory.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-        }
     }
 
-    protected override void OnInitialized()
+    private void SelectionUpdated()
     {
         for (int x = 0; x < 48; x++)
         {
-            var mode = DbFactory.Mode.FirstOrDefault(m => m.TimeSlot == x);
+            var mode = DbFactory.Mode.FirstOrDefault(m => m.TimeSlot == x && m.SchedualId == m_scheduleId);
             if (mode == null)
             {
                 mode = new BatteryMode()
                 {
-                    SchedualId = scheduleId,
+                    SchedualId = m_scheduleId,
                     BattMode = 2,
                     TimeSlot = x
                 };
-
-                DbFactory.Mode.Add(mode);
             }
-            Select[x] = mode.BattMode;
+            Modes[x] = mode;
         }
+
+        StateHasChanged();
+    }
+
+    protected override void OnInitialized()
+    {
+        var firstSchedule = DbFactory.Schedule.FirstOrDefault();
+
+        if (firstSchedule != null)
+        {
+            schedule_Id = firstSchedule.Id;
+        }
+
+        SelectionUpdated();
     }
 }
