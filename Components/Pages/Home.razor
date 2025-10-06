@@ -41,18 +41,17 @@
     }
 </style>
 
-<select class="form-control" @bind="@schedule_Id">
+<div>
+    <select class="form-control" @bind="@schedule_Id">
+        @foreach (var schedule in DbFactory.Schedule)
+        {
+            <option selected value="@schedule.Id"> @schedule.Name </option>
+        }
+    </select>
 
-    <option value=""></option>
-    @foreach (var schedule in DbFactory.Schedule)
-    {
-        <option value="@schedule.Id"> @schedule.Name </option>
-    }   
-}
-
-</select>
-
-<button class="btn btn-primary" @onclick="UpdateProduce">Send</button>
+    <button class="btn btn-primary" @onclick="UpdateProduce">Send</button>
+    <button class="btn btn-primary" @onclick="UpdateProduce">Send</button>
+</div>
 
 <table class="table">
     <thead>

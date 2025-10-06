@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BlazorBattControl.Migrations
 {
     [DbContext(typeof(BlazorBattControlContext))]
-    [Migration("20251005185410_AddedKeys")]
-    partial class AddedKeys
+    [Migration("20251006230428_IntialDB")]
+    partial class IntialDB
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -61,9 +61,6 @@ namespace BlazorBattControl.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<int>("SchedualId")
-                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
