@@ -42,14 +42,12 @@
 </style>
 
 <div>
-    <select class="form-control" @bind="@schedule_Id">
-        @foreach (var schedule in DbFactory.Schedule)
+    <select class="form-control" value="@selected" @onchange="SetSelected">
+        @foreach (var schedule in DbFactory.Schedule.OrderByDescending(m => m.Id))
         {
-            <option selected value="@schedule.Id"> @schedule.Name </option>
+            <option selected value="@schedule.Id">@schedule.Name</option>
         }
     </select>
-
-    <button class="btn btn-primary" @onclick="UpdateProduce">Send</button>
     <button class="btn btn-primary" @onclick="UpdateProduce">Send</button>
 </div>
 
@@ -67,8 +65,6 @@
     <tbody>
         @for (int row = 0; row < 48; row++)
         {
-            int local_row = row;
-
             TimeOnly s_time = new TimeOnly(row / 2, (row % 2) * 30);
             <tr>
                 <td>
@@ -76,11 +72,13 @@
                 </td>
                 @for (int x = 0; x < 5; x++)
                 {
+                    int local_row = row;
                     int _x = x;
+
                     <td>
                         <label class="tool_tip_radio_button" data-toggle="tooltip" data-placement="bottom" title="@buttionNames[x]">
                             <input type="radio" class="radio_base radio_1"
-                                   checked="@(Modes[local_row].BattMode == _x)"
+                                   checked="@buttonStates[_x, local_row]"
                                    name=@row onchange="@(() => OnCheckChange(local_row, _x))" />
                         </label>
                     </td>
@@ -92,40 +90,36 @@
                   
 @code
 {
-    private int m_scheduleId;
-
-    public int schedule_Id
-    {
-        get { return m_scheduleId; }
-        set 
-        { 
-            m_scheduleId = value;
-            SelectionUpdated();          
-        }
-    }
+    private int selected { get; set; }
 
     private string[] buttionNames = { "Charge ", "Backup ", "SelfUse", "Feed_In", "Dis_Chg" };
 
-    private BatteryMode[] Modes = new BatteryMode[48];
+    private bool[,] buttonStates = new bool[5, 48];
 
     private async Task OnCheckChange(int row, int x)
     {
-        if (Modes[row].BattMode != x)
+        buttonStates[x, row] = true;
+
+        var mode = DbFactory.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == schedule.Id);
+        if (mode == null)
         {
-            var mode = DbFactory.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == m_scheduleId);
-            if (mode == null)
+            mode = new BatteryMode()
             {
-                DbFactory.Mode.Add(Modes[row]);
-            }
-            Modes[row].BattMode = x;
-            
-            try
-            {
-                await DbFactory.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-            }
+                TimeSlot = row,
+                SchedualId = schedule.Id,
+                BattMode = x
+            };
+            DbFactory.Mode.Add(mode);
+        }
+        else
+            mode.BattMode = x;
+
+        try
+        {
+            await DbFactory.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
         }
     }
 
@@ -133,34 +127,43 @@
     {
     }
 
+    void SetSelected(ChangeEventArgs e)
+    {
+        if (e.Value != null)
+            selected = Convert.ToInt32(e.Value.ToString());
+
+        schedule = DbFactory.Schedule.FirstOrDefault(schedule => schedule.Id == selected);
+        SelectionUpdated();
+    }
+
     private void SelectionUpdated()
     {
-        for (int x = 0; x < 48; x++)
+        buttonStates = new bool[5, 48];
+        if (schedule != null)   
         {
-            var mode = DbFactory.Mode.FirstOrDefault(m => m.TimeSlot == x && m.SchedualId == m_scheduleId);
-            if (mode == null)
-            {
-                mode = new BatteryMode()
-                {
-                    SchedualId = m_scheduleId,
-                    BattMode = 2,
-                    TimeSlot = x
-                };
-            }
-            Modes[x] = mode;
-        }
+            for (int row = 0; row < 48; row++)
+                buttonStates[2, row] = true;
 
+            for (int row = 0; row < 48; row++)
+            {
+                var mode = DbFactory.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == schedule.Id);
+                if (mode != null && mode.BattMode != 2)
+                {
+                    buttonStates[2, row] = false;
+                    buttonStates[mode.BattMode, row] = true;           
+                }
+            }    
+        }
         StateHasChanged();
     }
 
+    private Schedule? schedule;
+
     protected override void OnInitialized()
     {
-        var firstSchedule = DbFactory.Schedule.FirstOrDefault();
-
-        if (firstSchedule != null)
-        {
-            schedule_Id = firstSchedule.Id;
-        }
+        base.OnInitialized();
+        schedule = DbFactory.Schedule.OrderBy(m => m.Id).FirstOrDefault();
+        selected = schedule.Id;
 
         SelectionUpdated();
     }
