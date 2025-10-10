@@ -2,18 +2,12 @@
 @using BlazorBattControl.Data
 @using BlazorBattControl.Models
 @using Microsoft.EntityFrameworkCore
-
-@inject BlazorBattControlContext DbFactory
+@implements IAsyncDisposable
+@inject IDbContextFactory<BlazorBattControlContext> DbFactory
 
 @rendermode InteractiveServer
 
 <style>
-    .test {
-        width: 30%;
-        height: 20px;
-        background-color: white;
-    }
-
     .tool_tip_radio_button{
         width: 30%;
         height: 20px;
@@ -24,9 +18,9 @@
         appearance: none;
         background: white;
         outline: 2px solid #333;
-        border: 3px solid white;
-        width: 45px;
-        height: 16px;
+        border: 1px solid white;
+        width: 40px;
+        height: 12px;
         vertical-align: center;
         horisontal-align: center;
     }
@@ -35,15 +29,19 @@
         background: Green;
     }
 
-    .radio_2[type='radio']:checked {
-        .radio_1;
-        background: Blue;
+    .h-text{
+        font-size: 10px;
+        text-align: center;
+    }
+
+    .h-row {
+        font-size: 8px;
     }
 </style>
 
 <div>
     <select class="form-control" value="@selected" @onchange="SetSelected">
-        @foreach (var schedule in DbFactory.Schedule.OrderByDescending(m => m.Id))
+        @foreach (var schedule in context.Schedule.OrderByDescending(m => m.Id))
         {
             <option selected value="@schedule.Id">@schedule.Name</option>
         }
@@ -51,24 +49,26 @@
     <button class="btn btn-primary" @onclick="UpdateProduce">Send</button>
 </div>
 
-<table class="table">
+<table>
     <thead>
         <tr>
-            <th>Period</th>
-            <th>Charge </th>
-            <th>Backup </th>
-            <th>SelfUse</th>
-            <th>Feed-In</th>
-            <th>Dis-Chg</th>
+            <th class="h-text" width="70">Period</th>
+            <th class="h-text">Charge</th>
+            <th class="h-text">Backup</th>
+            <th class="h-text">SelfUse</th>
+            <th class="h-text">Feed-In</th>
+            <th class="h-text">Dis-Chg</th>
         </tr>
     </thead>
     <tbody>
         @for (int row = 0; row < 48; row++)
         {
             TimeOnly s_time = new TimeOnly(row / 2, (row % 2) * 30);
+            TimeOnly e_time = new TimeOnly(row / 2, (row % 2) * 30);
+            e_time = e_time.AddMinutes(29);
             <tr>
                 <td>
-                    <label>@s_time</label>
+                    <label class="h-text">@s_time to @e_time</label>
                 </td>
                 @for (int x = 0; x < 5; x++)
                 {
@@ -100,7 +100,7 @@
     {
         buttonStates[x, row] = true;
 
-        var mode = DbFactory.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == schedule.Id);
+        var mode = context.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == schedule.Id);
         if (mode == null)
         {
             mode = new BatteryMode()
@@ -109,14 +109,14 @@
                 SchedualId = schedule.Id,
                 BattMode = x
             };
-            DbFactory.Mode.Add(mode);
+            context.Mode.Add(mode);
         }
         else
             mode.BattMode = x;
 
         try
         {
-            await DbFactory.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
         catch (DbUpdateConcurrencyException)
         {
@@ -132,7 +132,7 @@
         if (e.Value != null)
             selected = Convert.ToInt32(e.Value.ToString());
 
-        schedule = DbFactory.Schedule.FirstOrDefault(schedule => schedule.Id == selected);
+        schedule = context.Schedule.FirstOrDefault(schedule => schedule.Id == selected);
         SelectionUpdated();
     }
 
@@ -146,7 +146,7 @@
 
             for (int row = 0; row < 48; row++)
             {
-                var mode = DbFactory.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == schedule.Id);
+                var mode = context.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == schedule.Id);
                 if (mode != null && mode.BattMode != 2)
                 {
                     buttonStates[2, row] = false;
@@ -157,14 +157,22 @@
         StateHasChanged();
     }
 
-    private Schedule? schedule;
+    private Schedule schedule = default!;
+
+    private BlazorBattControlContext context = default!;
 
     protected override void OnInitialized()
     {
-        base.OnInitialized();
-        schedule = DbFactory.Schedule.OrderBy(m => m.Id).FirstOrDefault();
-        selected = schedule.Id;
+        context = DbFactory.CreateDbContext();
 
-        SelectionUpdated();
+        schedule = context.Schedule.OrderBy(m => m.Id).FirstOrDefault();
+
+        if (schedule != null)
+        {
+            selected = schedule.Id;
+            SelectionUpdated();      
+        }
     }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
 }
