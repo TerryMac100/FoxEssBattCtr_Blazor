@@ -6,6 +6,12 @@
 @implements IAsyncDisposable
 @inject IDbContextFactory<BlazorBattControl.Data.BlazorBattControlContext> DbFactory
 
+
+<style>
+    .header {
+        font-weight: bold;
+    }
+</style>
 <PageTitle>Schedules</PageTitle>
 
 <h1>Schedules</h1>
@@ -16,9 +22,21 @@
 
 <QuickGrid Class="table" Items="context.Schedule">
     <PropertyColumn Property="schedule => schedule.Name" Title="Name" />
-    <PropertyColumn Property="schedule => schedule.MinSoc" />
-    <PropertyColumn Property="schedule => schedule.MinDischargeSoc" Title="MinDisSoc" />
-    <PropertyColumn Property="schedule => schedule.DischargePower" Title="DisChgPw" />
+    <PropertyColumn Property="schedule => schedule.MinSoc">
+        <HeaderTemplate>
+            <div class="header">Min SOC</div>
+        </HeaderTemplate>
+    </PropertyColumn>
+    <PropertyColumn Property="schedule => schedule.MinDischargeSoc" >
+        <HeaderTemplate>
+            <div class="header">Min DisChg SOC</div>
+        </HeaderTemplate>
+    </PropertyColumn>
+    <PropertyColumn Property="schedule => schedule.DischargePower">
+        <HeaderTemplate>
+            <div class="header">DisChg Power</div>
+        </HeaderTemplate>
+    </PropertyColumn>
 
     <TemplateColumn Context="schedule">
         <a href="@($"schedules/edit?id={schedule.Id}")">Edit</a> |

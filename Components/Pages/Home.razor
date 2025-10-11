@@ -37,16 +37,24 @@
     .h-row {
         font-size: 8px;
     }
+
+    .b-margin{
+        margin: 4px 0px;
+    }
+
+    .t-centre{
+        text-align: center;
+    }
 </style>
 
 <div>
-    <select class="form-control" value="@selected" @onchange="SetSelected">
+    <select class="form-control"  style="width: 280px" value="@selected" @onchange="SetSelected">
         @foreach (var schedule in context.Schedule.OrderByDescending(m => m.Id))
         {
             <option selected value="@schedule.Id">@schedule.Name</option>
         }
     </select>
-    <button class="btn btn-primary" @onclick="UpdateProduce">Send</button>
+    <button class="btn btn-primary b-margin" padding=20 @onclick="UpdateProduce">Send</button>
 </div>
 
 <table>
@@ -67,8 +75,8 @@
             TimeOnly e_time = new TimeOnly(row / 2, (row % 2) * 30);
             e_time = e_time.AddMinutes(29);
             <tr>
-                <td>
-                    <label class="h-text">@s_time to @e_time</label>
+                <td class="t-centre">
+                    <label class="h-text">@s_time - @e_time</label>
                 </td>
                 @for (int x = 0; x < 5; x++)
                 {
@@ -164,7 +172,7 @@
     protected override void OnInitialized()
     {
         context = DbFactory.CreateDbContext();
-
+        
         schedule = context.Schedule.OrderBy(m => m.Id).FirstOrDefault();
 
         if (schedule != null)

@@ -33,7 +33,6 @@ namespace BlazorBattControl
                 serverOptions.ListenAnyIP(5005);   // The required http port
             });
 #endif
-
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -41,8 +40,8 @@ namespace BlazorBattControl
             {
                 app.UseExceptionHandler("/Error");
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-                app.UseHsts();
-    app.UseMigrationsEndPoint();
+                app.UseHsts(); 
+                app.UseMigrationsEndPoint();
             }
 
             app.UseHttpsRedirection();

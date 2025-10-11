@@ -23,12 +23,12 @@
             <dd class="col-sm-10">@schedule.Name</dd>
             <dt class="col-sm-2">Description</dt>
             <dd class="col-sm-10">@schedule.Description</dd>
-            <dt class="col-sm-2">MinSoc</dt>
-            <dd class="col-sm-10">@schedule.MinSoc</dd>
-            <dt class="col-sm-2">MinDischargeSoc</dt>
-            <dd class="col-sm-10">@schedule.MinDischargeSoc</dd>
-            <dt class="col-sm-2">DischargePower</dt>
-            <dd class="col-sm-10">@schedule.DischargePower</dd>
+            <dt class="col-sm-2">Min SOC</dt>
+            <dd class="col-sm-10">@schedule.MinSoc%</dd>
+            <dt class="col-sm-2">Min Discharge SOC</dt>
+            <dd class="col-sm-10">@schedule.MinDischargeSoc%</dd>
+            <dt class="col-sm-2">Discharge Power</dt>
+            <dd class="col-sm-10">@schedule.DischargePower kWh</dd>
         </dl>
         <div>
             <a href="@($"/schedules/edit?id={schedule.Id}")">Edit</a> |

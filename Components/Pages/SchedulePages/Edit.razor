@@ -33,18 +33,18 @@ else
                     <ValidationMessage For="() => Schedule.Description" class="text-danger" />
                 </div>
                 <div class="mb-3">
-                    <label for="minsoc" class="form-label">MinSoc:</label>
-                    <InputNumber id="minsoc" @bind-Value="Schedule.MinSoc" class="form-control" />
+                    <label for="minsoc" class="form-label">Min SOC:</label>
+                    <InputNumber id="minsoc" @bind-Value="Schedule.MinSoc" class="form-control" min="10" max="100" />
                     <ValidationMessage For="() => Schedule.MinSoc" class="text-danger" />
                 </div>
                 <div class="mb-3">
-                    <label for="mindischargesoc" class="form-label">MinDischargeSoc:</label>
-                    <InputNumber id="mindischargesoc" @bind-Value="Schedule.MinDischargeSoc" class="form-control" />
+                    <label for="mindischargesoc" class="form-label">Min Discharge SOC:</label>
+                    <InputNumber id="mindischargesoc" @bind-Value="Schedule.MinDischargeSoc" class="form-control" min="10" max="100" />
                     <ValidationMessage For="() => Schedule.MinDischargeSoc" class="text-danger" />
                 </div>
                 <div class="mb-3">
-                    <label for="dischargepower" class="form-label">DischargePower:</label>
-                    <InputNumber id="dischargepower" @bind-Value="Schedule.DischargePower" class="form-control" />
+                    <label for="dischargepower" class="form-label">Discharge Power:</label>
+                    <InputNumber id="dischargepower" @bind-Value="Schedule.DischargePower" class="form-control" min="0" max="8000" />
                     <ValidationMessage For="() => Schedule.DischargePower" class="text-danger" />
                 </div>
                 <button type="submit" class="btn btn-primary">Save</button>
