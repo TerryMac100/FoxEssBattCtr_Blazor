@@ -1,7 +1,6 @@
 using BlazorBattControl.Components;
 using BlazorBattControl.Data;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using NetDaemon.AppModel;
 using NetDaemon.Extensions.Logging;
 using NetDaemon.Extensions.Scheduler;
