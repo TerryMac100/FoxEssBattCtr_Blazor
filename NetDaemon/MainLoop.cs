@@ -13,11 +13,9 @@ public class MainLoop
         var count = 0;
         scheduler.RunEvery(TimeSpan.FromSeconds(5), () =>
         {
-            var entity = ha.Entity("switch.ewelink_ck_bl702_swp_01_7020_switch");
+            var entity = ha.Entity(config.Value.CurrentRateEntityID);
 
-            var state = config.Value.OffPeakFlagEntityID;
-
-            if (entity.State == state)
+            if (entity.State == entity.State)
             {
                 //entity.CallService("turn_off");
             }
