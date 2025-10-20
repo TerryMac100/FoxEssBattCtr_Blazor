@@ -1,7 +1,13 @@
 using BlazorBattControl.Components;
+using BlazorBattControl.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using BlazorBattControl.Data;
+using NetDaemon.AppModel;
+using NetDaemon.Extensions.Logging;
+using NetDaemon.Extensions.Scheduler;
+using NetDaemon.Extensions.Tts;
+using NetDaemon.Runtime;
+using System.Reflection;
 
 namespace BlazorBattControl
 {
@@ -10,6 +16,19 @@ namespace BlazorBattControl
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            builder.Host
+            .UseNetDaemonAppSettings()
+            .UseNetDaemonDefaultLogging()
+            .UseNetDaemonRuntime()
+            .UseNetDaemonTextToSpeech()
+            .ConfigureServices((_, services) =>
+                services
+                    .AddAppsFromAssembly(Assembly.GetExecutingAssembly())
+                    .AddNetDaemonStateManager()
+                    .AddNetDaemonScheduler()
+            );
+
             builder.Services.AddDbContextFactory<BlazorBattControlContext>(options =>
                 options.UseSqlite(builder.Configuration.GetConnectionString("BlazorBattControlContext") ?? throw new InvalidOperationException("Connection string 'BlazorBattControlContext' not found.")));
 
