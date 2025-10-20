@@ -7,14 +7,15 @@ namespace BlazorBattControl.NetDaemon;
 [NetDaemonApp]
 public class MainLoop
 {
-    public MainLoop(IHaContext ha, INetDaemonScheduler scheduler, IAppConfig<HelloConfig> config)
+    public MainLoop(IHaContext ha, INetDaemonScheduler scheduler, 
+        IAppConfig<FoxBatteryControlSettings> config)
     {
         var count = 0;
         scheduler.RunEvery(TimeSpan.FromSeconds(5), () =>
         {
             var entity = ha.Entity("switch.ewelink_ck_bl702_swp_01_7020_switch");
 
-            var state = config.Value.HelloMessage;
+            var state = config.Value.OffPeakFlagEntityID;
 
             if (entity.State == state)
             {
