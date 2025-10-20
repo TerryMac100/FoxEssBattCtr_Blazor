@@ -158,7 +158,7 @@ public class FoxEssMain
 
     public SetSchedule GetDefaultSchedule()
     {
-        var schedule = new SetSchedule(m_foxBatteryControlSettings);
+        var schedule = new SetSchedule();
         schedule.DeviceSN = m_foxBatteryControlSettings.Value.DeviceSN;
 
         schedule.Groups = new List<SetTimeSegment>();

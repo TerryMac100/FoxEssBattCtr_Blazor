@@ -26,9 +26,6 @@ public class FoxBatteryControlSettings
 {
     public string? ApiKey { get; set; }
     public string? DeviceSN { get; set; }
-    public double? DisablePrice { get; set; }
-    public double? ChargePrice { get; set; }
-    public string? CurrentRateEntityID { get; set; }
     public string? OffPeakFlagEntityID { get; set; }
     public DefaultSchedule? DefaultSchedule { get; set; }
 }

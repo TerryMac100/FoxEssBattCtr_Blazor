@@ -15,13 +15,6 @@ public class SetScheduleResponse : IFoxResponse
 
 public class SetSchedule
 {
-    private readonly IAppConfig<FoxBatteryControlSettings> m_foxBatteryControlSettings;
-
-    public SetSchedule(IAppConfig<FoxBatteryControlSettings> foxBatteryControlSettings)
-    {
-        m_foxBatteryControlSettings = foxBatteryControlSettings;
-    }
-
     [JsonPropertyName("deviceSN")]
     public string DeviceSN { get; set; }
 

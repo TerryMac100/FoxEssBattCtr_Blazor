@@ -1,9 +1,6 @@
 ﻿BlazorBattControl.NetDaemon.FoxBatteryControlSettings:
   ApiKey: ###########-YOUR-API-KEY-##########  
   DeviceSN: #YOUR-DEVICE-SERIAL-NUMBER#
-  DisablePrice: 0.075
-  ChargePrice: 0.075
-  CurrentRateEntityID: sensor.octopus_energy_electricity_YOUR_ACC_&_METER_NUMBER_current_rate
   OffPeakFlagEntityID: binary_sensor.octopus_energy_electricity_YOUR_ACC_&_METER_NUMBER_off_peak
   DefaultSchedule:
       Groups:
