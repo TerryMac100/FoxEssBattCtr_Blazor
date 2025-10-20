@@ -23,6 +23,8 @@
     <PackageReference Include="NetDaemon.Extensions.Tts" Version="25.36.0" />
     <PackageReference Include="NetDaemon.HassModel" Version="25.36.0" />
     <PackageReference Include="NetDaemon.Runtime" Version="25.36.0" />
+    <PackageReference Include="PuppeteerSharp" Version="20.2.4" />
+    <PackageReference Include="RestSharp" Version="112.1.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -48,7 +50,6 @@
 
   <ItemGroup>
     <Folder Include="Migrations\" />
-    <Folder Include="FoxEss\" />
   </ItemGroup>
 
 </Project>

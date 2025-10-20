@@ -1,5 +1,6 @@
 using BlazorBattControl.Components;
 using BlazorBattControl.Data;
+using BlazorBattControl.FoxEss;
 using Microsoft.EntityFrameworkCore;
 using NetDaemon.AppModel;
 using NetDaemon.Extensions.Logging;
@@ -26,7 +27,8 @@ namespace BlazorBattControl
                     .AddAppsFromAssembly(Assembly.GetExecutingAssembly())
                     .AddNetDaemonStateManager()
                     .AddNetDaemonScheduler()
-            );
+            )
+            .AddFoxApiClientBuilder();
 
             builder.Services.AddDbContextFactory<BlazorBattControlContext>(options =>
                 options.UseSqlite(builder.Configuration.GetConnectionString("BlazorBattControlContext") ?? throw new InvalidOperationException("Connection string 'BlazorBattControlContext' not found.")));
