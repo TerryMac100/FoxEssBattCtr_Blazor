@@ -10,14 +10,28 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BlazorBattControl.Migrations
 {
     [DbContext(typeof(BlazorBattControlContext))]
-    [Migration("20251006230428_IntialDB")]
-    partial class IntialDB
+    [Migration("20251022225040_FirstDatabaseV")]
+    partial class FirstDatabaseV
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.0");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
+
+            modelBuilder.Entity("BlazorBattControl.Models.AppDbSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SeletedScheduleId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AppDbSettings");
+                });
 
             modelBuilder.Entity("BlazorBattControl.Models.BatteryMode", b =>
                 {

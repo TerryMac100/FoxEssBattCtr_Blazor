@@ -5,11 +5,24 @@
 namespace BlazorBattControl.Migrations
 {
     /// <inheritdoc />
-    public partial class IntialDB : Migration
+    public partial class FirstDatabaseV : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "AppDbSettings",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    SeletedScheduleId = table.Column<int>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AppDbSettings", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "Mode",
                 columns: table => new
@@ -46,6 +59,9 @@ namespace BlazorBattControl.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "AppDbSettings");
+
             migrationBuilder.DropTable(
                 name: "Mode");
 
