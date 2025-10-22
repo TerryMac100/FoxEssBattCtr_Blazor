@@ -109,19 +109,21 @@
     {
         buttonStates[x, row] = true;
 
-        var mode = context.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == schedule.Id);
+        var mode = context.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == selectedSchedule.Id);
         if (mode == null)
         {
             mode = new BatteryMode()
             {
                 TimeSlot = row,
-                SchedualId = schedule.Id,
+                SchedualId = selectedSchedule.Id,
                 BattMode = x
             };
             context.Mode.Add(mode);
         }
         else
             mode.BattMode = x;
+
+        context.Update(mode);
 
         try
         {
@@ -141,21 +143,30 @@
         if (e.Value != null)
             selected = Convert.ToInt32(e.Value.ToString());
 
-        schedule = context.Schedule.FirstOrDefault(schedule => schedule.Id == selected);
+        selectedSchedule = context.Schedule.FirstOrDefault(schedule => schedule.Id == selected);
+        
+        var appSettings = context.AppDbSettings.FirstOrDefault();
+        if (appSettings != null)
+        {
+            appSettings.SeletedScheduleId = selectedSchedule.Id;
+            context.Update(appSettings);
+            context.SaveChanges();
+        }
+            
         SelectionUpdated();
     }
 
     private void SelectionUpdated()
     {
         buttonStates = new bool[5, 48];
-        if (schedule != null)   
+        if (selectedSchedule != null)
         {
             for (int row = 0; row < 48; row++)
                 buttonStates[2, row] = true;
 
             for (int row = 0; row < 48; row++)
             {
-                var mode = context.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == schedule.Id);
+                var mode = context.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == selectedSchedule.Id);
                 if (mode != null && mode.BattMode != 2)
                 {
                     buttonStates[2, row] = false;
@@ -168,22 +179,38 @@
 
     private BlazorBattControlContext context = default!;
 
-    private Schedule schedule = default!;
+    private Schedule selectedSchedule = default!;
 
     private List<Schedule> schedules = new List<Schedule>();
-
-    //private Schedule? SelectedSchedule { get; set; } = default!;
 
     protected override void OnInitialized()
     {
         context = DbFactory.CreateDbContext();
         schedules = context.Schedule.OrderByDescending(m => m.Id).ToList();
 
-        schedule = schedules.LastOrDefault();
+        var settings = context.AppDbSettings.FirstOrDefault();
 
-        if (schedule != null)
+        if (settings == null)
+            selectedSchedule = context.Schedule.FirstOrDefault();
+        else
+            selectedSchedule = context.Schedule.FirstOrDefault(s => s.Id == settings.SeletedScheduleId);
+
+        if (selectedSchedule != null)
         {
-            selected = schedule.Id;
+            var appSettings = context.AppDbSettings.FirstOrDefault();
+            if (appSettings == null)
+            {
+                appSettings = new AppDbSettings()
+                {
+                    SeletedScheduleId = selectedSchedule.Id
+                };
+                context.AppDbSettings.Add(appSettings);
+                context.Update(appSettings);
+
+                context.SaveChanges();
+            }
+
+            selected = selectedSchedule.Id;
             SelectionUpdated();      
         }
         else
