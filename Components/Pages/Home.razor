@@ -165,15 +165,20 @@
         StateHasChanged();
     }
 
+    private BlazorBattControlContext context = default!;
+
     private Schedule schedule = default!;
 
-    private BlazorBattControlContext context = default!;
+    private List<Schedule> schedules = new List<Schedule>();
+
+    //private Schedule? SelectedSchedule { get; set; } = default!;
 
     protected override void OnInitialized()
     {
         context = DbFactory.CreateDbContext();
-        
-        schedule = context.Schedule.OrderBy(m => m.Id).FirstOrDefault();
+        schedules = context.Schedule.OrderByDescending(m => m.Id).ToList();
+
+        schedule = schedules.LastOrDefault();
 
         if (schedule != null)
         {

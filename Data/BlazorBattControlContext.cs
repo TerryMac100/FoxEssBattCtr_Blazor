@@ -12,5 +12,7 @@ namespace BlazorBattControl.Data
 
         public DbSet<Schedule> Schedule { get; set; } = default!;
         public DbSet<BatteryMode> Mode { get; set; } = default!;
+
+        public DbSet<AppDbSettings> AppDbSettings { get; set; } = default!;
     }
 }
