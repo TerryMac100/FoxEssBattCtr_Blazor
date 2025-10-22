@@ -144,7 +144,7 @@
             selected = Convert.ToInt32(e.Value.ToString());
 
         selectedSchedule = context.Schedule.FirstOrDefault(schedule => schedule.Id == selected);
-        
+
         var appSettings = context.AppDbSettings.FirstOrDefault();
         if (appSettings != null)
         {
@@ -152,12 +152,13 @@
             context.Update(appSettings);
             context.SaveChanges();
         }
-            
+
         SelectionUpdated();
     }
 
     private void SelectionUpdated()
     {
+        using var context = DbFactory.CreateDbContext();
         buttonStates = new bool[5, 48];
         if (selectedSchedule != null)
         {
@@ -183,9 +184,9 @@
 
     private List<Schedule> schedules = new List<Schedule>();
 
-    protected override void OnInitialized()
+    protected override void OnAfterRender(bool firstRender)
     {
-        context = DbFactory.CreateDbContext();
+        using var context = DbFactory.CreateDbContext();
         schedules = context.Schedule.OrderByDescending(m => m.Id).ToList();
 
         var settings = context.AppDbSettings.FirstOrDefault();
@@ -217,6 +218,11 @@
         {
             NavManager.NavigateTo("/schedules/create");
         }
+    }
+
+    protected override void OnInitialized()
+    {
+        context = DbFactory.CreateDbContext();
     }
 
     public async ValueTask DisposeAsync() => await context.DisposeAsync();
