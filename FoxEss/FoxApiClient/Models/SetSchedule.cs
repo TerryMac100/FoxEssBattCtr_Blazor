@@ -1,4 +1,5 @@
-﻿using BlazorBattControl.NetDaemon;
+﻿using BlazorBattControl.Models;
+using BlazorBattControl.NetDaemon;
 using NetDaemon.AppModel;
 using System.Text.Json.Serialization;
 
@@ -24,7 +25,43 @@ public class SetSchedule
 
 public class SetTimeSegment : GetTimeSegment
 {
-    private readonly Group m_group;
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="startSlot">30 Minute start time</param>
+    /// <param name="mode">Battery control mode</param>
+    /// <param name="minSoc">Minimum Stat of Charge</param>
+    /// <param name="fdMinSoc">Force Discharge Minimum Stat of Charge</param>
+    /// <param name="dcPower">Discharge Power</param>
+    public SetTimeSegment(int startSlot, int mode, int minSoc, int fdMinSoc, int dcPower)
+    {
+        StartHour = startSlot >> 1;
+        if ((startSlot % 2) == 1)
+            StartMinute = 30;
+
+        switch (mode)
+        {
+            case 0: // SelfUse
+                WorkMode = "ForceCharge";
+                break;
+
+            case 1: // Backup
+                WorkMode = "Backup";
+                break;
+
+            case 3:
+                WorkMode = "Feedin";        // Note: "FeedIn" changed to "Feedin" to match expected API value
+                break;
+            
+            case 4:
+                WorkMode = "ForceDischarge";
+                break;
+            
+            default:
+                WorkMode = "SelfUse";
+                break;
+        }
+    }
 
     public SetTimeSegment(DateTime dateTime)
     {
@@ -43,16 +80,15 @@ public class SetTimeSegment : GetTimeSegment
 
     public SetTimeSegment(Group group)
     {
-        m_group = group;
-        WorkMode = m_group.WorkMode;
-        Enable = m_group.Enabled;
-        MinSocOnGrid = m_group.MinSocOnGrid;
-        StartHour = m_group.StartHour;
-        StartMinute = m_group.StartMinute;
-        EndHour = m_group.EndHour;
-        EndMinute = m_group.EndMinute;
-        FdSoc = m_group.FdSoc;
-        FdPwr = m_group.FdPwr;
+        WorkMode = group.WorkMode;
+        Enable = group.Enabled;
+        MinSocOnGrid = group.MinSocOnGrid;
+        StartHour = group.StartHour;
+        StartMinute = group.StartMinute;
+        EndHour = group.EndHour;
+        EndMinute = group.EndMinute;
+        FdSoc = group.FdSoc;
+        FdPwr = group.FdPwr;
     }
     public int Enable { get; set; } = 1;
 }

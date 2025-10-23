@@ -1,4 +1,7 @@
-﻿using BlazorBattControl.NetDaemon;
+﻿using BlazorBattControl.Data;
+using BlazorBattControl.Models;
+using BlazorBattControl.NetDaemon;
+using Microsoft.EntityFrameworkCore;
 using NetDaemon.AppModel;
 using NetDaemon.HassModel;
 using NetDaemonMain.apps.FoxEss.FoxApiClient.Models;
@@ -14,18 +17,20 @@ public class FoxEssMain
     private readonly IHaContext m_ha;
     private readonly FoxSettings m_settings;
     private readonly IAppConfig<FoxBatteryControlSettings> m_foxBatteryControlSettings;
+    private readonly IDbContextFactory<BlazorBattControlContext> m_dbFactory;
     private readonly ILogger<FoxEssMain> m_logger;
 
     public FoxEssMain(
         IHaContext ha,
         FoxSettings settings,
         IAppConfig<FoxBatteryControlSettings> foxBatteryControlSettings,
-        ILogger<FoxEssMain> logger)
+        IDbContextFactory<BlazorBattControlContext> dbFactory,
+    ILogger<FoxEssMain> logger)
     {
         m_ha = ha;
         m_settings = settings;
         m_foxBatteryControlSettings = foxBatteryControlSettings;
-
+        m_dbFactory = dbFactory;
         m_logger = logger;
     }
 
@@ -72,6 +77,54 @@ public class FoxEssMain
 
         return request;
     }
+
+    public async Task SendSelectedSchedule()
+    {
+        using var dbContext = await m_dbFactory.CreateDbContextAsync();
+        var dbSettings = await dbContext.AppDbSettings.FirstOrDefaultAsync();
+
+        if (dbSettings != null)
+        {
+            var scheduleSettings = await dbContext.Schedule.FirstOrDefaultAsync(s => s.Id == dbSettings.SeletedScheduleId);
+            var schedule = new SetSchedule() 
+            { 
+                Groups = new List<SetTimeSegment>(),
+                DeviceSN = m_settings.DeviceSN
+            };
+
+            int[] modes = new int[48];
+
+            // Populate the array of modes setting undefined modes to 2 (SelfUse)
+            for (int index = 0; index < 48; index++)
+            {
+                var mode = dbContext.Mode.FirstOrDefault(m => m.TimeSlot == index && m.SchedualId == dbSettings.SeletedScheduleId);
+                if (mode != null)
+                    modes[index] = mode.BattMode;
+                else
+                    modes[index] = 2;
+            }
+
+            int i = 0;
+            while (i < modes.Length)
+            {
+                int mode = modes[i];
+                var segment = new SetTimeSegment(i, mode, scheduleSettings.MinSoc, scheduleSettings.MinDischargeSoc, scheduleSettings.DischargePower);
+
+                schedule.Groups.Add(segment);
+
+                while (i < modes.Length - 1 && modes[i + 1] == mode)
+                    i++;
+
+                segment.EndHour = i >> 1;
+                if ((i % 2) == 1)
+                    segment.EndMinute = 59;
+                else
+                    segment.EndMinute = 29;
+                i++;
+            }
+        }
+    }
+
 
     public async Task<GetTimeSegmentResponse?> GetSchedule()
     {
