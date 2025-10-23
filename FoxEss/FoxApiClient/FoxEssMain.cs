@@ -89,7 +89,7 @@ public class FoxEssMain
             var schedule = new SetSchedule() 
             { 
                 Groups = new List<SetTimeSegment>(),
-                DeviceSN = m_settings.DeviceSN
+                DeviceSN = m_foxBatteryControlSettings.Value.DeviceSN
             };
 
             int[] modes = new int[48];
@@ -122,6 +122,8 @@ public class FoxEssMain
                     segment.EndMinute = 29;
                 i++;
             }
+        
+            SetSchedule(schedule);
         }
     }
 

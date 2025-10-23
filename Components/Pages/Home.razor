@@ -1,10 +1,12 @@
 ﻿@page "/"
 @using BlazorBattControl.Data
+@using BlazorBattControl.FoxEss.FoxApiClient
 @using BlazorBattControl.Models
 @using Microsoft.EntityFrameworkCore
 @implements IAsyncDisposable
 @inject NavigationManager NavManager
 @inject IDbContextFactory<BlazorBattControlContext> DbFactory
+@inject FoxEssMain m_foxEssMain
 
 @rendermode InteractiveServer
 
@@ -132,8 +134,9 @@
         }
     }
 
-    private void UpdateProduce()
+    private async Task UpdateProduce()
     {
+        await m_foxEssMain.SendSelectedSchedule();
     }
 
     void SetSelected(ChangeEventArgs e)
