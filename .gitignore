@@ -363,3 +363,5 @@ MigrationBackup/
 FodyWeavers.xsd
 /appsettings.json
 /NetDaemon/FoxBatteryControlSettings.yaml
+/BlazorBattControlDB.db-shm
+/BlazorBattControlDB.db-wal
