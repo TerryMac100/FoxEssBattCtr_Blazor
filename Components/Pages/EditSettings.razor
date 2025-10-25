@@ -6,11 +6,10 @@
 
 @rendermode InteractiveServer
 
-<PageTitle>Edit</PageTitle>
+<PageTitle>Edit Settings</PageTitle>
 
-<h1>Edit</h1>
+<h1>Edit Settings</h1>
 
-<h2>Settings</h2>
 <hr />
 @if (DbSettings is null)
 {
@@ -34,8 +33,8 @@ else
                     <ValidationMessage For="() => DbSettings.FoxApiKey" class="text-danger" />
                 </div>
                 <div class="mb-3">
-                    <label for="description" class="form-label">Off Peak Entity Flag ID:</label>
-                    <InputText id="OffPeakFlagEntityID" @bind-Value="DbSettings.OffPeakFlagEntityID" class="form-control" />
+                    <label for="description" class="form-label">HA Off Peak Sensor ID:</label>
+                    <InputText id="OffPeakFlagEntityID" @bind-Value="DbSettings.OffPeakFlagEntityID" class="form-control"  />
                     <ValidationMessage For="() => DbSettings.OffPeakFlagEntityID" class="text-danger" />
                 </div>
                 <button type="submit" class="btn btn-primary">Save</button>
@@ -45,7 +44,7 @@ else
 }
 
 <div>
-    <a href="/schedules">Back to List</a>
+    <a href="/">Cancel</a>
 </div>
 
 @code {
@@ -54,7 +53,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         using var context = DbFactory.CreateDbContext();
-        DbSettings ??= await context.AppDbSettings.FirstOrDefaultAsync();
+        DbSettings ??= await context.AppDbSettings.OrderBy(x => x.Id).FirstOrDefaultAsync();
 
         if (DbSettings is null)
         {

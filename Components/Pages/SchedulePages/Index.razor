@@ -6,7 +6,6 @@
 @implements IAsyncDisposable
 @inject IDbContextFactory<BlazorBattControl.Data.BlazorBattControlContext> DbFactory
 
-
 <style>
     .header {
         font-weight: bold;
@@ -20,7 +19,7 @@
     <a href="schedules/create">Create New</a>
 </p>
 
-<QuickGrid Class="table" Items="context.Schedule">
+<QuickGrid Class="table" Items="context.Schedule.OrderBy(x => x.Id)">
     <PropertyColumn Property="schedule => schedule.Name" Title="Name" />
     <PropertyColumn Property="schedule => schedule.MinSoc">
         <HeaderTemplate>
@@ -51,11 +50,6 @@
     protected override void OnInitialized()
     {
         context = DbFactory.CreateDbContext();
-
-        foreach (var schedule in context.Schedule)
-        {
-            Console.WriteLine($"Schedule: {schedule.Id}");
-        }
     }
 
     public async ValueTask DisposeAsync() => await context.DisposeAsync();

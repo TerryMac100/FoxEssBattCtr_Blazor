@@ -1,20 +1,35 @@
-﻿using BlazorBattControl.NetDaemon;
-using NetDaemon.AppModel;
+﻿using BlazorBattControl.Data;
+using BlazorBattControl.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace NetDaemonMain.apps.FoxEss.FoxApiClient.Models;
 
-
-public class FoxSettings
+public class FoxSettings(IDbContextFactory<BlazorBattControlContext> dbFactory)
 {
-    private readonly string m_key;
-    private readonly string m_deviceSn;
-    private readonly IAppConfig<FoxBatteryControlSettings> m_foxBatteryControlSettings;
-
-    public FoxSettings(IAppConfig<FoxBatteryControlSettings> foxBatteryControlSettings)
+    private readonly IDbContextFactory<BlazorBattControlContext> m_dbFactory = dbFactory;
+    private AppDbSettings? m_settings;
+    private AppDbSettings settings
     {
-        m_foxBatteryControlSettings = foxBatteryControlSettings;
-    }
+        get
+        {
+            if (m_settings == null)
+            {
+                using var context = m_dbFactory.CreateDbContext();
+                var settings = context.AppDbSettings.OrderBy(x => x.Id).FirstOrDefault();
+            
+                if (settings is null)
+                    m_settings = new AppDbSettings();
+                else
+                    m_settings = settings;
+            }
 
-    public string ApiKey => m_foxBatteryControlSettings.Value.ApiKey;
-    public string DeviceSN => m_foxBatteryControlSettings.Value.ApiKey; 
+            return m_settings;
+        }
+    } 
+
+    public string ApiKey => settings.FoxApiKey;
+    public string DeviceSN => settings.DeviceSN;
+    public int SeletedScheduleId => settings.SeletedScheduleId;
+    public string OffPeakFlagEntityID => settings.OffPeakFlagEntityID;
+    public bool UseOffPeakFlag => settings.UseOffPeakFlag;
 }

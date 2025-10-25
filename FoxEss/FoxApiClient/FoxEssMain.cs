@@ -92,7 +92,7 @@ public class FoxEssMain
     public async Task<SetSchedule> GetSelectedSchedule()
     {
         using var dbContext = await m_dbFactory.CreateDbContextAsync();
-        var dbSettings = await dbContext.AppDbSettings.FirstOrDefaultAsync();
+        var dbSettings = await dbContext.AppDbSettings.OrderBy(x => x.Id).FirstOrDefaultAsync();
 
         var schedule = new SetSchedule() 
                     { 

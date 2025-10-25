@@ -146,7 +146,7 @@
 
         selectedSchedule = context.Schedule.FirstOrDefault(schedule => schedule.Id == selected);
 
-        var appSettings = context.AppDbSettings.FirstOrDefault();
+        var appSettings = context.AppDbSettings.OrderBy(x => x.Id).FirstOrDefault();
         if (appSettings != null)
         {
             appSettings.SeletedScheduleId = selectedSchedule.Id;
@@ -190,7 +190,7 @@
         using var context = DbFactory.CreateDbContext();
         schedules = context.Schedule.OrderByDescending(m => m.Id).ToList();
 
-        var settings = context.AppDbSettings.FirstOrDefault();
+        var settings = context.AppDbSettings.OrderBy(x => x.Id).FirstOrDefault();
 
         if (settings == null)
             selectedSchedule = context.Schedule.FirstOrDefault();
@@ -199,7 +199,7 @@
 
         if (selectedSchedule != null)
         {
-            var appSettings = context.AppDbSettings.FirstOrDefault();
+            var appSettings = context.AppDbSettings.OrderBy(x => x.Id).FirstOrDefault();
             if (appSettings == null)
             {
                 appSettings = new AppDbSettings()
