@@ -365,3 +365,6 @@ FodyWeavers.xsd
 /NetDaemon/FoxBatteryControlSettings.yaml
 /BlazorBattControlDB.db-shm
 /BlazorBattControlDB.db-wal
+/BlazorBattControlDB.db
+/BlazorBattControlDB.db-wal
+/BlazorBattControlDB.db-shm
