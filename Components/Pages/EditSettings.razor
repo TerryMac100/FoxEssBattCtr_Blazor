@@ -4,11 +4,13 @@
 @inject IDbContextFactory<BlazorBattControl.Data.BlazorBattControlContext> DbFactory
 @inject NavigationManager NavigationManager
 
+@rendermode InteractiveServer
+
 <PageTitle>Edit</PageTitle>
 
 <h1>Edit</h1>
 
-<h2>Schedule</h2>
+<h2>Settings</h2>
 <hr />
 @if (DbSettings is null)
 {
@@ -24,17 +26,16 @@ else
                 <input type="hidden" name="DbSettings.Id" value="@DbSettings.Id" />
                 <div class="mb-3">
                     <label for="name" class="form-label">Device Serial Number:</label>
-                    <InputText id="name" @bind-Value="DbSettings.DeviceSN" class="form-control" />
-                    <ValidationMessage For="() => DbSettings.DeviceSN" class="text-danger" />
+                    <InputText id="DeviceSN" @bind-Value="DbSettings.DeviceSN" class="form-control" />
                 </div>
                 <div class="mb-3">
                     <label for="description" class="form-label">FoxESS Api Key:</label>
-                    <InputText id="description" @bind-Value="DbSettings.FoxApiKey" class="form-control" />
+                    <InputText id="FoxApiKey" @bind-Value="DbSettings.FoxApiKey" class="form-control" />
                     <ValidationMessage For="() => DbSettings.FoxApiKey" class="text-danger" />
                 </div>
                 <div class="mb-3">
                     <label for="description" class="form-label">Off Peak Entity Flag ID:</label>
-                    <InputText id="description" @bind-Value="DbSettings.OffPeakFlagEntityID" class="form-control" />
+                    <InputText id="OffPeakFlagEntityID" @bind-Value="DbSettings.OffPeakFlagEntityID" class="form-control" />
                     <ValidationMessage For="() => DbSettings.OffPeakFlagEntityID" class="text-danger" />
                 </div>
                 <button type="submit" class="btn btn-primary">Save</button>
@@ -58,10 +59,6 @@ else
         if (DbSettings is null)
         {
             NavigationManager.NavigateTo("notfound");
-        }
-        else
-        {
-            //DbSettings.DeviceSN = "34324234234"; // For testing only"
         }
     }
 
