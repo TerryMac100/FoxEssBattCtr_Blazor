@@ -92,7 +92,8 @@ public class FoxBatteryControl
     {
         if (m_requestDefaultSchedule.State == "on")
         {
-            SendSchedule(m_foxEssMain.GetDefaultSchedule());
+            SendSchedule(m_foxEssMain.GetSelectedSchedule().Result);
+            //SendSchedule(m_foxEssMain.GetDefaultSchedule());
             m_requestDefaultSchedule.CallService("turn_off");       // TurnOff();
         }
 
@@ -113,7 +114,7 @@ public class FoxBatteryControl
         {
             case MonitorSchedule.Reset:
                 m_logger.LogInformation($"FoxESS - Reset");
-                SendSchedule(m_foxEssMain.GetDefaultSchedule());
+                SendSchedule(m_foxEssMain.GetSelectedSchedule().Result);
 
                 if (m_overNight)
                     MonitorState = MonitorSchedule.OverNight;
@@ -133,7 +134,7 @@ public class FoxBatteryControl
                 if (m_overNight)
                 {
                     m_logger.LogInformation($"FoxESS - Off peak started, Setting up Default Schedule");
-                    SendSchedule(m_foxEssMain.GetDefaultSchedule());
+                    SendSchedule(m_foxEssMain.GetSelectedSchedule().Result);
                     MonitorState = MonitorSchedule.OverNight;
                 }
                 else
@@ -152,7 +153,7 @@ public class FoxBatteryControl
                 if (m_overNight)
                 {
                     m_logger.LogInformation($"FoxESS - Off peak started, Setting up Default Schedule");
-                    SendSchedule(m_foxEssMain.GetDefaultSchedule());
+                    SendSchedule(m_foxEssMain.GetSelectedSchedule().Result);
                     MonitorState = MonitorSchedule.OverNight;
                 }
                 else
@@ -160,7 +161,7 @@ public class FoxBatteryControl
                     if (m_octupusOffPeak)
                     {
                         m_logger.LogInformation($"FoxESS - Current price greater than charge price");
-                        SendSchedule(m_foxEssMain.GetDefaultSchedule());
+                        SendSchedule(m_foxEssMain.GetSelectedSchedule().Result);
 
                         MonitorState = MonitorSchedule.PeakDayRate;
                     }

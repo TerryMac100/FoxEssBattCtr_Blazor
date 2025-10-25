@@ -80,17 +80,29 @@ public class FoxEssMain
 
     public async Task SendSelectedSchedule()
     {
+
+        var schedule = await GetSelectedSchedule();
+        SetSchedule(schedule);
+    }
+
+    /// <summary>
+    /// Get the schedule currently selected by the home U/I 
+    /// </summary>
+    /// <returns>A Set Schedule</returns>
+    public async Task<SetSchedule> GetSelectedSchedule()
+    {
         using var dbContext = await m_dbFactory.CreateDbContextAsync();
         var dbSettings = await dbContext.AppDbSettings.FirstOrDefaultAsync();
 
+        var schedule = new SetSchedule() 
+                    { 
+                        Groups = new List<SetTimeSegment>(),
+                        DeviceSN = m_foxBatteryControlSettings.Value.DeviceSN
+                    };
         if (dbSettings != null)
         {
             var scheduleSettings = await dbContext.Schedule.FirstOrDefaultAsync(s => s.Id == dbSettings.SeletedScheduleId);
-            var schedule = new SetSchedule() 
-            { 
-                Groups = new List<SetTimeSegment>(),
-                DeviceSN = m_foxBatteryControlSettings.Value.DeviceSN
-            };
+            
 
             int[] modes = new int[48];
 
@@ -122,11 +134,10 @@ public class FoxEssMain
                     segment.EndMinute = 29;
                 i++;
             }
-        
-            SetSchedule(schedule);
         }
-    }
 
+        return schedule;
+    }
 
     public async Task<GetTimeSegmentResponse?> GetSchedule()
     {
