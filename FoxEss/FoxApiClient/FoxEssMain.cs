@@ -1,5 +1,4 @@
 ﻿using BlazorBattControl.Data;
-using BlazorBattControl.Models;
 using BlazorBattControl.NetDaemon;
 using Microsoft.EntityFrameworkCore;
 using NetDaemon.AppModel;
@@ -16,7 +15,6 @@ public class FoxEssMain
 {
     private readonly IHaContext m_ha;
     private readonly FoxSettings m_settings;
-    private readonly IAppConfig<FoxBatteryControlSettings> m_foxBatteryControlSettings;
     private readonly IDbContextFactory<BlazorBattControlContext> m_dbFactory;
     private readonly ILogger<FoxEssMain> m_logger;
 
@@ -25,11 +23,10 @@ public class FoxEssMain
         FoxSettings settings,
         IAppConfig<FoxBatteryControlSettings> foxBatteryControlSettings,
         IDbContextFactory<BlazorBattControlContext> dbFactory,
-    ILogger<FoxEssMain> logger)
+        ILogger<FoxEssMain> logger)
     {
         m_ha = ha;
         m_settings = settings;
-        m_foxBatteryControlSettings = foxBatteryControlSettings;
         m_dbFactory = dbFactory;
         m_logger = logger;
     }
@@ -80,60 +77,66 @@ public class FoxEssMain
 
     public async Task SendSelectedSchedule()
     {
-
-        var schedule = await GetSelectedSchedule();
+        var schedule = await GetSelectedScheduleAsync();
         SetSchedule(schedule);
     }
 
-    /// <summary>
-    /// Get the schedule currently selected by the home U/I 
-    /// </summary>
-    /// <returns>A Set Schedule</returns>
-    public async Task<SetSchedule> GetSelectedSchedule()
+    public SetSchedule GetSelectedSchedule()
     {
-        using var dbContext = await m_dbFactory.CreateDbContextAsync();
-        var dbSettings = await dbContext.AppDbSettings.OrderBy(x => x.Id).FirstOrDefaultAsync();
+        return GetSelectedScheduleAsync().Result;
+    }
 
-        var schedule = new SetSchedule() 
-                    { 
-                        Groups = new List<SetTimeSegment>(),
-                        DeviceSN = m_foxBatteryControlSettings.Value.DeviceSN
-                    };
-        if (dbSettings != null)
+    private int[] GetModes()        
+    {
+        using var dbContext = m_dbFactory.CreateDbContext();
+
+        int[] modes = new int[48];
+
+        // Populate the array of modes setting undefined modes to 2 (SelfUse)
+        for (int index = 0; index < 48; index++)
         {
-            var scheduleSettings = await dbContext.Schedule.FirstOrDefaultAsync(s => s.Id == dbSettings.SeletedScheduleId);
-            
+            var mode = dbContext.Mode.FirstOrDefault(m => m.TimeSlot == index && m.SchedualId == m_settings.SeletedScheduleId);
+            if (mode != null)
+                modes[index] = mode.BattMode;
+            else
+                modes[index] = 2;
+        }
 
-            int[] modes = new int[48];
+        return modes;
+    }
 
-            // Populate the array of modes setting undefined modes to 2 (SelfUse)
-            for (int index = 0; index < 48; index++)
-            {
-                var mode = dbContext.Mode.FirstOrDefault(m => m.TimeSlot == index && m.SchedualId == dbSettings.SeletedScheduleId);
-                if (mode != null)
-                    modes[index] = mode.BattMode;
-                else
-                    modes[index] = 2;
-            }
+    public async Task<SetSchedule> GetSelectedScheduleAsync()
+    {
+        int[] modes = GetModes();
 
-            int i = 0;
-            while (i < modes.Length)
-            {
-                int mode = modes[i];
-                var segment = new SetTimeSegment(i, mode, scheduleSettings.MinSoc, scheduleSettings.MinDischargeSoc, scheduleSettings.DischargePower);
+        return GetScheduleFromModes(modes);
+    }
 
-                schedule.Groups.Add(segment);
+    private SetSchedule GetScheduleFromModes(int[] modes)
+    {
+        var schedule = new SetSchedule()               
+        { 
+            Groups = new List<SetTimeSegment>(),
+            DeviceSN = m_settings.DeviceSN
+        };
 
-                while (i < modes.Length - 1 && modes[i + 1] == mode)
-                    i++;
+        int i = 0;
+        while (i < modes.Length)
+        {
+            int mode = modes[i];
+            var segment = new SetTimeSegment(i, mode, m_settings.MinSoc, m_settings.MinDischargeSoc, m_settings.DischargePower);
 
-                segment.EndHour = i >> 1;
-                if ((i % 2) == 1)
-                    segment.EndMinute = 59;
-                else
-                    segment.EndMinute = 29;
+            schedule.Groups.Add(segment);
+
+            while (i < modes.Length - 1 && modes[i + 1] == mode)
                 i++;
-            }
+
+            segment.EndHour = i >> 1;
+            if ((i % 2) == 1)
+                segment.EndMinute = 59;
+            else
+                segment.EndMinute = 29;
+            i++;
         }
 
         return schedule;
@@ -222,39 +225,24 @@ public class FoxEssMain
         }
     }
 
-    public SetSchedule GetDefaultSchedule()
-    {
-        var schedule = new SetSchedule();
-        schedule.DeviceSN = m_foxBatteryControlSettings.Value.DeviceSN;
-
-        schedule.Groups = new List<SetTimeSegment>();
-
-        foreach (var group in m_foxBatteryControlSettings.Value.DefaultSchedule.Groups)
-        {
-            var timeSeg = new SetTimeSegment(group);
-            schedule.Groups.Add(timeSeg);
-        }
-
-        return schedule;
-    }
-
     public SetSchedule GetBackupSegment(DateTime dateTime)
     {
-        var schedule = GetDefaultSchedule();
-        var section = new SetTimeSegment(dateTime);
+        var schedule = GetSelectedSchedule();
+        var section = new SetTimeSegment(dateTime, "Backup");
 
-        schedule.Groups.Add(section);
+        if (schedule.Groups is not null)
+            schedule.Groups.Add(section);
 
         return schedule;
     }
 
     public SetSchedule GetChargeSegment(DateTime dateTime)
     {
-        var schedule = GetDefaultSchedule();
-        var section = new SetTimeSegment(dateTime);
-        section.WorkMode = "ForceCharge";
+        var schedule = GetSelectedSchedule();
+        var section = new SetTimeSegment(dateTime, "ForceCharge");
 
-        schedule.Groups.Add(section);
+        if (schedule.Groups is not null)
+            schedule.Groups.Add(section);
 
         return schedule;
     }
@@ -263,7 +251,7 @@ public class FoxEssMain
     {
         bool[] sections = new bool[48];
 
-        var defaultSchedual = GetDefaultSchedule();
+        var defaultSchedual = GetSelectedSchedule();
 
         if (defaultSchedual != null && defaultSchedual.Groups != null)
             foreach (var period in defaultSchedual.Groups)

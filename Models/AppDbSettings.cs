@@ -15,5 +15,8 @@ public class AppDbSettings
     public string FoxApiKey { get; set; } = string.Empty;
 
     public string OffPeakFlagEntityID { get; set; } = string.Empty;
+
+    public string BackupFlagEntityID { get; set; } = string.Empty;
+
     public bool UseOffPeakFlag { get; set; }
 }

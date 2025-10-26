@@ -32,4 +32,26 @@ public class FoxSettings(IDbContextFactory<BlazorBattControlContext> dbFactory)
     public int SeletedScheduleId => settings.SeletedScheduleId;
     public string OffPeakFlagEntityID => settings.OffPeakFlagEntityID;
     public bool UseOffPeakFlag => settings.UseOffPeakFlag;
+
+    private Schedule? m_schedule;
+    public Schedule Schedule
+    {
+        get
+        {
+            if (m_schedule == null)
+            {
+                using var context = m_dbFactory.CreateDbContext();
+                var schedule = context.Schedule.FirstOrDefault(s => s.Id == settings.SeletedScheduleId);
+                if (schedule is null)
+                    m_schedule = new Schedule();
+                else
+                    m_schedule = schedule;
+            }
+            return m_schedule;
+        }
+    }
+
+    public int MinSoc => Schedule.MinSoc;
+    public int MinDischargeSoc => Schedule.MinDischargeSoc;
+    public int DischargePower => Schedule.DischargePower;
 }

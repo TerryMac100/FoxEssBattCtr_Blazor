@@ -6,6 +6,13 @@
 
 @rendermode InteractiveServer
 
+<style>
+    .input-full-width{
+        width: 100%;
+    }
+</style>
+
+
 <PageTitle>Edit Settings</PageTitle>
 
 <h1>Edit Settings</h1>
@@ -17,8 +24,8 @@
 }
 else
 {
-    <div class="row">
-        <div class="col-md-4">
+    <div class="row input-full-width">
+        <div class="col-md-4 input-full-width">
             <EditForm method="post" Model="DbSettings" OnValidSubmit="UpdateDbSettings" FormName="edit" Enhance>
                 <DataAnnotationsValidator />
                 <ValidationSummary role="alert" />
@@ -33,9 +40,15 @@ else
                     <ValidationMessage For="() => DbSettings.FoxApiKey" class="text-danger" />
                 </div>
                 <div class="mb-3">
-                    <label for="description" class="form-label">HA Off Peak Sensor ID:</label>
-                    <InputText id="OffPeakFlagEntityID" @bind-Value="DbSettings.OffPeakFlagEntityID" class="form-control"  />
+                    <label for="description" class="form-label">HA Battery Charge Flag ID:</label>
+                    <InputText id="OffPeakFlagEntityID" @bind-Value="DbSettings.OffPeakFlagEntityID" class="form-control" />
                     <ValidationMessage For="() => DbSettings.OffPeakFlagEntityID" class="text-danger" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">HA Battery Backup Flag ID:</label>
+                    <InputText id="BackupFlagEntityID" @bind-Value="DbSettings.BackupFlagEntityID" class="form-control" />
+                    <ValidationMessage For="() => DbSettings.BackupFlagEntityID" class="text-danger" />
                 </div>
                 <button type="submit" class="btn btn-primary">Save</button>
             </EditForm>

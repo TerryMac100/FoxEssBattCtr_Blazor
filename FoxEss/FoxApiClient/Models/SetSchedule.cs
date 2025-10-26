@@ -39,6 +39,10 @@ public class SetTimeSegment : GetTimeSegment
         if ((startSlot % 2) == 1)
             StartMinute = 30;
 
+        MinSocOnGrid = minSoc;
+        FdSoc = fdMinSoc;
+        FdPwr = dcPower;
+
         switch (mode)
         {
             case 0: // SelfUse
@@ -63,9 +67,9 @@ public class SetTimeSegment : GetTimeSegment
         }
     }
 
-    public SetTimeSegment(DateTime dateTime)
+    public SetTimeSegment(DateTime dateTime, string workMode)
     {
-        WorkMode = "Backup";
+        WorkMode = workMode;
 
         MinSocOnGrid = 20;
         StartHour = dateTime.Hour;
