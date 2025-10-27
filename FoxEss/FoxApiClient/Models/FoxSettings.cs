@@ -45,8 +45,6 @@ public class FoxSettings
     {
         get 
         {
-            //m_logger.LogInformation($"Getting Selected Schedule Id = {settings.SeletedScheduleId}");
-
             return settings.SeletedScheduleId;
         }
         set
@@ -66,20 +64,13 @@ public class FoxSettings
             {
 
             }
-            //using var context = m_dbFactory.CreateDbContext();
-            //m_appDSsettings = context.AppDbSettings.OrderBy(x => x.Id).FirstOrDefault();
-            //if (m_appDSsettings is not null)
-            //{
-            //    m_appDSsettings.SeletedScheduleId = value;
-            //    context.SaveChangesAsync().Wait();
-            //    m_schedule = null;      // Invalidate cached schedule
-            //}
         }
     }
 
     public string ApiKey => settings.FoxApiKey;
     public string DeviceSN => settings.DeviceSN;
     public string OffPeakFlagEntityID => settings.OffPeakFlagEntityID;
+    public string BackupFlagEntityID => settings.BackupFlagEntityID;
     public bool UseOffPeakFlag => settings.UseOffPeakFlag;
     private Schedule? m_schedule;
 

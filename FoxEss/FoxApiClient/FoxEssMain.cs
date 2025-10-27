@@ -77,13 +77,8 @@ public class FoxEssMain
 
     public void SendSelectedSchedule()
     {
-        var schedule = GetSelectedScheduleAsync();
+        var schedule = GetSelectedSchedule();
         SetSchedule(schedule);
-    }
-
-    public SetSchedule GetSelectedSchedule()
-    {
-        return GetSelectedScheduleAsync();
     }
 
     private int[] GetModes()        
@@ -105,7 +100,7 @@ public class FoxEssMain
         return modes;
     }
 
-    public SetSchedule GetSelectedScheduleAsync()
+    public SetSchedule GetSelectedSchedule()
     {
         int[] modes = GetModes();
 
@@ -229,22 +224,42 @@ public class FoxEssMain
 
     public SetSchedule GetBackupSegment(DateTime dateTime)
     {
-        var schedule = GetSelectedSchedule();
-        var section = new SetTimeSegment(dateTime, "Backup");
+        var modes = GetModes();
 
-        if (schedule.Groups is not null)
-            schedule.Groups.Add(section);
+        var seg = (dateTime.Hour * 2);
+        if (dateTime.Minute >= 30)
+            seg += 1;
+
+        modes[seg] = 1; // Backup
+
+        var schedule = GetScheduleFromModes(modes);
+
+        //var schedule = GetSelectedSchedule();
+        //var section = new SetTimeSegment(dateTime, "Backup");
+
+        //if (schedule.Groups is not null)
+        //    schedule.Groups.Add(section);
 
         return schedule;
     }
 
     public SetSchedule GetChargeSegment(DateTime dateTime)
     {
-        var schedule = GetSelectedSchedule();
-        var section = new SetTimeSegment(dateTime, "ForceCharge");
+        var modes = GetModes();
 
-        if (schedule.Groups is not null)
-            schedule.Groups.Add(section);
+        var seg = (dateTime.Hour * 2);
+        if (dateTime.Minute >= 30)
+            seg += 1;
+
+        modes[seg] = 0; // ForceCharge
+
+        var schedule = GetScheduleFromModes(modes);
+
+        //var schedule = GetSelectedSchedule();
+        //var section = new SetTimeSegment(dateTime, "ForceCharge");
+
+        //if (schedule.Groups is not null)
+        //    schedule.Groups.Add(section);
 
         return schedule;
     }
