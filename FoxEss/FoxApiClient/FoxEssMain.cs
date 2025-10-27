@@ -75,15 +75,15 @@ public class FoxEssMain
         return request;
     }
 
-    public async Task SendSelectedSchedule()
+    public void SendSelectedSchedule()
     {
-        var schedule = await GetSelectedScheduleAsync();
+        var schedule = GetSelectedScheduleAsync();
         SetSchedule(schedule);
     }
 
     public SetSchedule GetSelectedSchedule()
     {
-        return GetSelectedScheduleAsync().Result;
+        return GetSelectedScheduleAsync();
     }
 
     private int[] GetModes()        
@@ -95,7 +95,7 @@ public class FoxEssMain
         // Populate the array of modes setting undefined modes to 2 (SelfUse)
         for (int index = 0; index < 48; index++)
         {
-            var mode = dbContext.Mode.FirstOrDefault(m => m.TimeSlot == index && m.SchedualId == m_settings.SeletedScheduleId);
+            var mode = dbContext.Mode.FirstOrDefault(m => m.TimeSlot == index && m.SchedualId == m_settings.SelectedScheduleId);
             if (mode != null)
                 modes[index] = mode.BattMode;
             else
@@ -105,7 +105,7 @@ public class FoxEssMain
         return modes;
     }
 
-    public async Task<SetSchedule> GetSelectedScheduleAsync()
+    public SetSchedule GetSelectedScheduleAsync()
     {
         int[] modes = GetModes();
 
@@ -114,6 +114,8 @@ public class FoxEssMain
 
     private SetSchedule GetScheduleFromModes(int[] modes)
     {
+        m_logger.LogInformation($"Getting ScheduleId {m_settings.SelectedScheduleId}");
+
         var schedule = new SetSchedule()               
         { 
             Groups = new List<SetTimeSegment>(),

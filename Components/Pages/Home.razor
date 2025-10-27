@@ -3,10 +3,12 @@
 @using BlazorBattControl.FoxEss.FoxApiClient
 @using BlazorBattControl.Models
 @using Microsoft.EntityFrameworkCore
-@implements IAsyncDisposable
+@using NetDaemonMain.apps.FoxEss.FoxApiClient.Models
+
 @inject NavigationManager NavManager
-@inject IDbContextFactory<BlazorBattControlContext> DbFactory
+@inject IDbContextFactory<BlazorBattControlContext> m_dbFactory
 @inject FoxEssMain m_foxEssMain
+@inject FoxSettings m_foxSettings
 
 @rendermode InteractiveServer
 
@@ -52,7 +54,7 @@
 
 <div>
     <select class="form-control"  style="width: 280px" value="@selected" @onchange="SetSelected">
-        @foreach (var schedule in context.Schedule.OrderByDescending(m => m.Id))
+        @foreach (var schedule in m_dbFactory.CreateDbContext().Schedule.OrderByDescending(m => m.Id))
         {
             <option selected value="@schedule.Id">@schedule.Name</option>
         }
@@ -101,6 +103,8 @@
                   
 @code
 {
+    //private BlazorBattControlContext context = default!;
+
     private int selected { get; set; }
 
     private string[] buttionNames = { "Charge ", "Backup ", "SelfUse", "Feed_In", "Dis_Chg" };
@@ -111,13 +115,15 @@
     {
         buttonStates[x, row] = true;
 
-        var mode = context.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == selectedSchedule.Id);
+        using var context = m_dbFactory.CreateDbContext();
+
+        var mode = context.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == m_foxSettings.SelectedScheduleId);
         if (mode == null)
         {
             mode = new BatteryMode()
             {
                 TimeSlot = row,
-                SchedualId = selectedSchedule.Id,
+                SchedualId = m_foxSettings.SelectedScheduleId,
                 BattMode = x
             };
             context.Mode.Add(mode);
@@ -134,97 +140,43 @@
         }
     }
 
-    private async Task UpdateProduce()
+    private void UpdateProduce()
     {
-        await m_foxEssMain.SendSelectedSchedule();
+        m_foxEssMain.SendSelectedSchedule();
     }
 
-    void SetSelected(ChangeEventArgs e)
+    private void SetSelected(ChangeEventArgs e)
     {
         if (e.Value != null)
             selected = Convert.ToInt32(e.Value.ToString());
 
-        selectedSchedule = context.Schedule.FirstOrDefault(schedule => schedule.Id == selected);
-
-        var appSettings = context.AppDbSettings.OrderBy(x => x.Id).FirstOrDefault();
-        if (appSettings != null)
-        {
-            appSettings.SeletedScheduleId = selectedSchedule.Id;
-            context.Update(appSettings);
-            context.SaveChanges();
-        }
+        m_foxSettings.SelectedScheduleId = selected;
 
         SelectionUpdated();
     }
 
     private void SelectionUpdated()
     {
-        using var context = DbFactory.CreateDbContext();
+        using var context = m_dbFactory.CreateDbContext();
         buttonStates = new bool[5, 48];
-        if (selectedSchedule != null)
-        {
-            for (int row = 0; row < 48; row++)
-                buttonStates[2, row] = true;
+        for (int row = 0; row < 48; row++)
+            buttonStates[2, row] = true;
 
-            for (int row = 0; row < 48; row++)
+        for (int row = 0; row < 48; row++)
+        {
+            var mode = context.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == m_foxSettings.SelectedScheduleId);
+            if (mode != null && mode.BattMode != 2)
             {
-                var mode = context.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == selectedSchedule.Id);
-                if (mode != null && mode.BattMode != 2)
-                {
-                    buttonStates[2, row] = false;
-                    buttonStates[mode.BattMode, row] = true;           
-                }
-            }    
-        }
+                buttonStates[2, row] = false;
+                buttonStates[mode.BattMode, row] = true;           
+            }
+        }    
         StateHasChanged();
     }
 
-    private BlazorBattControlContext context = default!;
-
-    private Schedule selectedSchedule = default!;
-
-    private List<Schedule> schedules = new List<Schedule>();
-
     protected override void OnAfterRender(bool firstRender)
     {
-        using var context = DbFactory.CreateDbContext();
-        schedules = context.Schedule.OrderByDescending(m => m.Id).ToList();
-
-        var settings = context.AppDbSettings.OrderBy(x => x.Id).FirstOrDefault();
-
-        if (settings == null)
-            selectedSchedule = context.Schedule.FirstOrDefault();
-        else
-            selectedSchedule = context.Schedule.FirstOrDefault(s => s.Id == settings.SeletedScheduleId);
-
-        if (selectedSchedule != null)
-        {
-            var appSettings = context.AppDbSettings.OrderBy(x => x.Id).FirstOrDefault();
-            if (appSettings == null)
-            {
-                appSettings = new AppDbSettings()
-                {
-                    SeletedScheduleId = selectedSchedule.Id
-                };
-                context.AppDbSettings.Add(appSettings);
-                context.Update(appSettings);
-
-                context.SaveChanges();
-            }
-
-            selected = selectedSchedule.Id;
-            SelectionUpdated();      
-        }
-        else
-        {
-            NavManager.NavigateTo("/schedules/create");
-        }
+        selected = m_foxSettings.SelectedScheduleId;
+        SelectionUpdated();      
     }
-
-    protected override void OnInitialized()
-    {
-        context = DbFactory.CreateDbContext();
-    }
-
-    public async ValueTask DisposeAsync() => await context.DisposeAsync();
 }

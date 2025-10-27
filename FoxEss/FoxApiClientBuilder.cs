@@ -17,7 +17,7 @@ public static class FoxApiClientBuilder
         hostBuilder.ConfigureServices(services =>
         {
             services.AddTransient<FoxEssMain>();
-            services.AddTransient<FoxSettings>();
+            services.AddSingleton<FoxSettings>();   // Only need one settings instance!!!!
         });
         return hostBuilder;
     }
