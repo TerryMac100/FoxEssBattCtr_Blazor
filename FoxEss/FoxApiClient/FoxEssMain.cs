@@ -15,19 +15,16 @@ public class FoxEssMain
 {
     private readonly IHaContext m_ha;
     private readonly FoxSettings m_settings;
-    private readonly IDbContextFactory<BlazorBattControlContext> m_dbFactory;
     private readonly ILogger<FoxEssMain> m_logger;
 
     public FoxEssMain(
         IHaContext ha,
         FoxSettings settings,
         IAppConfig<FoxBatteryControlSettings> foxBatteryControlSettings,
-        IDbContextFactory<BlazorBattControlContext> dbFactory,
         ILogger<FoxEssMain> logger)
     {
         m_ha = ha;
         m_settings = settings;
-        m_dbFactory = dbFactory;
         m_logger = logger;
     }
 
@@ -83,18 +80,12 @@ public class FoxEssMain
 
     private int[] GetModes()        
     {
-        using var dbContext = m_dbFactory.CreateDbContext();
-
         int[] modes = new int[48];
 
         // Populate the array of modes setting undefined modes to 2 (SelfUse)
         for (int index = 0; index < 48; index++)
         {
-            var mode = dbContext.Mode.FirstOrDefault(m => m.TimeSlot == index && m.SchedualId == m_settings.SelectedScheduleId);
-            if (mode != null)
-                modes[index] = mode.BattMode;
-            else
-                modes[index] = 2;
+            modes[index] = m_settings.GetModeValue(index);
         }
 
         return modes;
@@ -170,7 +161,7 @@ public class FoxEssMain
     public async void SetSchedule(SetSchedule setSchedule)
     {
         // Disable the calls in debug builds (but keep the code in place for testing)
-        bool m_debugBuild = false;
+        bool m_debugBuild = true;
 #if DEBUG
         m_debugBuild = true;
 #endif

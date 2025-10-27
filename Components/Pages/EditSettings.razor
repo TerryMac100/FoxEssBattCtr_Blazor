@@ -1,8 +1,10 @@
 ﻿@page "/settings"
 @using Microsoft.EntityFrameworkCore
 @using BlazorBattControl.Models
-@inject IDbContextFactory<BlazorBattControl.Data.BlazorBattControlContext> DbFactory
+@using NetDaemonMain.apps.FoxEss.FoxApiClient.Models
 @inject NavigationManager NavigationManager
+@inject FoxSettings m_foxSettings
+
 
 @rendermode InteractiveServer
 
@@ -18,7 +20,7 @@
 <h1>Edit Settings</h1>
 
 <hr />
-@if (DbSettings is null)
+@if (m_foxSettings is null)
 {
     <p><em>Loading...</em></p>
 }
@@ -26,29 +28,30 @@ else
 {
     <div class="row input-full-width">
         <div class="col-md-4 input-full-width">
-            <EditForm method="post" Model="DbSettings" OnValidSubmit="UpdateDbSettings" FormName="edit" Enhance>
-                <DataAnnotationsValidator />
-                <ValidationSummary role="alert" />
-                <input type="hidden" name="DbSettings.Id" value="@DbSettings.Id" />
+            <EditForm method="post" Model="m_foxSettings" OnValidSubmit="UpdateDbSettings" FormName="edit" Enhance>
+                
                 <div class="mb-3">
                     <label for="name" class="form-label">Device Serial Number:</label>
-                    <InputText id="DeviceSN" @bind-Value="DbSettings.DeviceSN" class="form-control" />
+                    <InputText id="DeviceSN" @bind-Value="m_foxSettings.DeviceSN" class="form-control" />
+                    <ValidationMessage For="() => m_foxSettings.ApiKey" class="text-danger" />
                 </div>
+                
+                
                 <div class="mb-3">
                     <label for="description" class="form-label">FoxESS Api Key:</label>
-                    <InputText id="FoxApiKey" @bind-Value="DbSettings.FoxApiKey" class="form-control" />
-                    <ValidationMessage For="() => DbSettings.FoxApiKey" class="text-danger" />
+                    <InputText id="ApiKey" @bind-Value="m_foxSettings.ApiKey" class="form-control" />
+                    <ValidationMessage For="() => m_foxSettings.ApiKey" class="text-danger" />
                 </div>
                 <div class="mb-3">
                     <label for="description" class="form-label">HA Battery Charge Flag ID:</label>
-                    <InputText id="OffPeakFlagEntityID" @bind-Value="DbSettings.OffPeakFlagEntityID" class="form-control" />
-                    <ValidationMessage For="() => DbSettings.OffPeakFlagEntityID" class="text-danger" />
+                    <InputText id="OffPeakFlagEntityID" @bind-Value="m_foxSettings.OffPeakFlagEntityID" class="form-control" />
+                    <ValidationMessage For="() => m_foxSettings.OffPeakFlagEntityID" class="text-danger" />
                 </div>
 
                 <div class="mb-3">
                     <label for="description" class="form-label">HA Battery Backup Flag ID:</label>
-                    <InputText id="BackupFlagEntityID" @bind-Value="DbSettings.BackupFlagEntityID" class="form-control" />
-                    <ValidationMessage For="() => DbSettings.BackupFlagEntityID" class="text-danger" />
+                    <InputText id="BackupFlagEntityID" @bind-Value="m_foxSettings.BackupFlagEntityID" class="form-control" />
+                    <ValidationMessage For="() => m_foxSettings.BackupFlagEntityID" class="text-danger" />
                 </div>
                 <button type="submit" class="btn btn-primary">Save</button>
             </EditForm>
@@ -61,34 +64,19 @@ else
 </div>
 
 @code {
-    private AppDbSettings? DbSettings { get; set; }
+    private FoxSettings? FoxSettings { get; set; }
 
-    protected override async Task OnInitializedAsync()
-    {
-        using var context = DbFactory.CreateDbContext();
-        DbSettings ??= await context.AppDbSettings.OrderBy(x => x.Id).FirstOrDefaultAsync();
 
-        if (DbSettings is null)
-        {
-            NavigationManager.NavigateTo("notfound");
-        }
-    }
+    // protected override async Task OnInitializedAsync()
+    // {
+    //     FoxSettings = m_foxSettings;
+    // }
 
     // To protect from overposting attacks, enable the specific properties you want to bind to.
     // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
-    private async Task UpdateDbSettings()
+    private void UpdateDbSettings()
     {
-        using var context = DbFactory.CreateDbContext();
-        context.Attach(DbSettings!).State = EntityState.Modified;
-
-        try
-        {
-            await context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            
-        }
+        m_foxSettings.UpdateSettings();
 
         NavigationManager.NavigateTo("/");
     }

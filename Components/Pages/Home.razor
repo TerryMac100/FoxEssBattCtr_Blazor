@@ -6,7 +6,6 @@
 @using NetDaemonMain.apps.FoxEss.FoxApiClient.Models
 
 @inject NavigationManager NavManager
-@inject IDbContextFactory<BlazorBattControlContext> m_dbFactory
 @inject FoxEssMain m_foxEssMain
 @inject FoxSettings m_foxSettings
 
@@ -54,7 +53,7 @@
 
 <div>
     <select class="form-control"  style="width: 280px" value="@selected" @onchange="SetSelected">
-        @foreach (var schedule in m_dbFactory.CreateDbContext().Schedule.OrderByDescending(m => m.Id))
+        @foreach (var schedule in m_foxSettings.AllSchedules.OrderBy(m => m.Id))
         {
             <option selected value="@schedule.Id">@schedule.Name</option>
         }
@@ -103,41 +102,16 @@
                   
 @code
 {
-    //private BlazorBattControlContext context = default!;
-
     private int selected { get; set; }
 
     private string[] buttionNames = { "Charge ", "Backup ", "SelfUse", "Feed_In", "Dis_Chg" };
 
     private bool[,] buttonStates = new bool[5, 48];
 
-    private async Task OnCheckChange(int row, int x)
+    private void OnCheckChange(int row, int x)
     {
         buttonStates[x, row] = true;
-
-        using var context = m_dbFactory.CreateDbContext();
-
-        var mode = context.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == m_foxSettings.SelectedScheduleId);
-        if (mode == null)
-        {
-            mode = new BatteryMode()
-            {
-                TimeSlot = row,
-                SchedualId = m_foxSettings.SelectedScheduleId,
-                BattMode = x
-            };
-            context.Mode.Add(mode);
-        }
-        else
-            mode.BattMode = x;
-
-        try
-        {
-            await context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-        }
+        m_foxSettings.SetMode(row, x);
     }
 
     private void UpdateProduce()
@@ -157,20 +131,13 @@
 
     private void SelectionUpdated()
     {
-        using var context = m_dbFactory.CreateDbContext();
         buttonStates = new bool[5, 48];
         for (int row = 0; row < 48; row++)
-            buttonStates[2, row] = true;
-
-        for (int row = 0; row < 48; row++)
         {
-            var mode = context.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == m_foxSettings.SelectedScheduleId);
-            if (mode != null && mode.BattMode != 2)
-            {
-                buttonStates[2, row] = false;
-                buttonStates[mode.BattMode, row] = true;           
-            }
-        }    
+            var mode = m_foxSettings.GetModeValue(row);
+            buttonStates[mode, row] = true;
+        }
+
         StateHasChanged();
     }
 

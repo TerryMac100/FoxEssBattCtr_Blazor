@@ -1,7 +1,6 @@
 ﻿using BlazorBattControl.Data;
 using BlazorBattControl.FoxEss.FoxApiClient;
 using BlazorBattControl.Models;
-using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
 
 namespace NetDaemonMain.apps.FoxEss.FoxApiClient.Models;
@@ -16,6 +15,65 @@ public class FoxSettings
     {
         m_dbFactory = dbFactory;
         m_logger = logger;
+    }
+
+    public BatteryMode? GetMode(int index)
+    {
+        using var dbContext = m_dbFactory.CreateDbContext();
+        var mode = dbContext.Mode.FirstOrDefault(m => m.TimeSlot == index && m.SchedualId == SelectedScheduleId);
+            
+        return mode;
+    }
+
+    public int GetModeValue(int index)
+    {
+        var mode = GetMode(index);
+        if (mode is null)
+            return 2;
+
+        return mode.BattMode;
+    }
+
+    public void SetMode(int index, int modeValue)
+    {
+        using var dbContext = m_dbFactory.CreateDbContext();
+
+        var mode = dbContext.Mode.FirstOrDefault(m => m.TimeSlot == index && m.SchedualId == SelectedScheduleId);
+        if (mode is null)
+        {
+            mode = new BatteryMode
+            {
+                TimeSlot = index,
+                BattMode = modeValue,
+                SchedualId = SelectedScheduleId
+            };
+            dbContext.Mode.Add(mode);
+        }
+        else
+        {
+            mode.BattMode = modeValue;
+            dbContext.Mode.Update(mode);
+        }
+
+        dbContext.SaveChanges();
+    }
+
+    public void UpdateSettings()
+    {
+        using var context = m_dbFactory.CreateDbContext();
+
+        try
+        {
+            context.Attach(settings!).State = EntityState.Modified;         
+            context.SaveChanges();
+            m_logger.LogInformation($"Selected Schedule Id set to {settings.SeletedScheduleId}");
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            m_logger.LogError("Error updating AppDbSettings in database.");
+        }
+
+        m_logger.LogInformation("AppDbSettings updated successfully.");
     }
 
     private AppDbSettings? m_appDSsettings;
@@ -50,28 +108,66 @@ public class FoxSettings
         set
         {
             settings.SeletedScheduleId = value;
-
-            using var context = m_dbFactory.CreateDbContext();
-            context.Attach(settings!).State = EntityState.Modified;
-
-            try
-            {
-                context.SaveChanges();
-
-                m_logger.LogInformation($"Selected Schedule Id set to {settings.SeletedScheduleId}");
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-
-            }
+            UpdateSettings();
         }
     }
 
-    public string ApiKey => settings.FoxApiKey;
-    public string DeviceSN => settings.DeviceSN;
-    public string OffPeakFlagEntityID => settings.OffPeakFlagEntityID;
-    public string BackupFlagEntityID => settings.BackupFlagEntityID;
-    public bool UseOffPeakFlag => settings.UseOffPeakFlag;
+    public string ApiKey
+    {
+        get => settings.FoxApiKey;
+        set
+        {
+            settings.FoxApiKey = value;
+        }
+    }
+    public string DeviceSN
+    {
+        get
+        {
+            return settings.DeviceSN;
+        }
+        set
+        {
+            settings.DeviceSN = value;
+        }
+    }
+
+    public string OffPeakFlagEntityID
+    {
+        get
+        {
+            return settings.OffPeakFlagEntityID;
+        }
+        set
+        {
+            settings.OffPeakFlagEntityID = value;
+        }
+    }
+
+    public string BackupFlagEntityID
+    {
+        get
+        {
+            return settings.BackupFlagEntityID;
+        }
+        set
+        {
+            settings.BackupFlagEntityID = value;
+        }
+    }
+    
+    public bool UseOffPeakFlag
+    {
+        get
+        {
+            return settings.UseOffPeakFlag;
+        }
+        set
+        {
+            settings.UseOffPeakFlag = value;
+        }
+    }
+
     private Schedule? m_schedule;
 
     public Schedule Schedule
@@ -88,6 +184,15 @@ public class FoxSettings
                     m_schedule = schedule;
             }
             return m_schedule;
+        }
+    }
+
+    public List<Schedule> AllSchedules
+    {
+        get
+        {
+            using var context = m_dbFactory.CreateDbContext();
+            return context.Schedule.ToList();
         }
     }
 

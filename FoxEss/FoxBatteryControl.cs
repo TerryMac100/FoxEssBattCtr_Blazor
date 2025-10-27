@@ -209,7 +209,7 @@ public class FoxBatteryControl
                     {
                         if (currentSlot != m_lastSlot)      // New slot detected
                         {
-                            m_logger.LogInformation($"FoxESS - Extending charge period");
+                            m_logger.LogInformation($"FoxESS - Extending Backup period");
                             SendSchedule(m_foxEssMain.GetBackupSegment(dateTimeNow));
                         }
                     }
