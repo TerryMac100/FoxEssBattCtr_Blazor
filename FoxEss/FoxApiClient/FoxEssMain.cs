@@ -3,9 +3,11 @@ using BlazorBattControl.NetDaemon;
 using Microsoft.EntityFrameworkCore;
 using NetDaemon.AppModel;
 using NetDaemon.HassModel;
+using NetDaemon.HassModel.Entities;
 using NetDaemonMain.apps.FoxEss.FoxApiClient.Models;
 using Newtonsoft.Json;
 using RestSharp;
+using System;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -213,6 +215,78 @@ public class FoxEssMain
         }
     }
 
+
+    private bool m_foxChargeActive => new Entity(m_ha, m_settings.OffPeakFlagEntityID).State == "on";
+    private bool m_foxBackupActive => new Entity(m_ha, m_settings.BackupFlagEntityID).State == "on";
+    private bool m_foxFeedInActive => new Entity(m_ha, m_settings.FeedInPriorityFlagEntityID).State == "on";
+    private bool m_foxDischargeActive => new Entity(m_ha, m_settings.DischargeFlagEntityID).State == "on";
+
+    public MonitorSchedule SendSchedule (MonitorSchedule currentState)
+    {          
+        int requiredMode = 2;       // SelfUse
+        var modes = GetModes();
+        var dateTime = DateTime.Now;
+        var seg = dateTime.Hour * 2;
+        if (dateTime.Minute >= 30)
+            seg += 1;
+
+        if (m_foxChargeActive)
+            requiredMode = 0; // Charge
+        else if (m_foxBackupActive)
+            requiredMode = 1; // Backup
+        else if (m_foxFeedInActive)
+            requiredMode = 3; // FeedIn
+        else if (m_foxDischargeActive)
+            requiredMode = 4; // Discharge
+        else
+        {
+            // get required mode from schedule
+            requiredMode = modes[seg];
+        }
+
+        switch (requiredMode)
+        {
+            case 0:
+                if (currentState == MonitorSchedule.ChargePeriod)
+                    return MonitorSchedule.ChargePeriod;
+                break;
+            case 1:
+                if (currentState == MonitorSchedule.BackupPeriod)
+                    return MonitorSchedule.BackupPeriod;
+                break;
+            case 3:
+                if (currentState == MonitorSchedule.FeedInPeriod )
+                    return MonitorSchedule.FeedInPeriod;
+                break;
+            case 4:
+                if (currentState == MonitorSchedule.DischargePeriod)   
+                    return MonitorSchedule.DischargePeriod;
+                break;
+            default:
+                if (currentState == MonitorSchedule.SelfUsePeriod)
+                    return MonitorSchedule.SelfUsePeriod;
+                break;
+        }
+
+        modes[seg] = requiredMode;
+        var schedule = GetScheduleFromModes(modes);
+        SetSchedule(schedule);
+
+        switch (requiredMode) { 
+            case 0:
+                return MonitorSchedule.ChargePeriod;
+            case 1:
+                return MonitorSchedule.BackupPeriod;
+            case 3:
+                return MonitorSchedule.FeedInPeriod;
+            case 4:
+                return MonitorSchedule.DischargePeriod;
+            default:
+                return MonitorSchedule.SelfUsePeriod;
+        }
+    }
+
+
     public void SetSegment(DateTime dateTime, int mode)
     {
         var seg = dateTime.Hour * 2;
@@ -256,6 +330,17 @@ public class FoxEssMain
 
         return sections;
     }
+
+    public enum MonitorSchedule
+    {
+        ChargePeriod,
+        BackupPeriod,
+        SelfUsePeriod,
+        FeedInPeriod,
+        DischargePeriod,
+        Reset
+    }
+
     private const string lang = "en";
     private const string domain = "https://www.foxesscloud.com";
 }
