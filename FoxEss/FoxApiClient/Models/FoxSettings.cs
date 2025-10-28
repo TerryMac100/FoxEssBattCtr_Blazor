@@ -156,6 +156,30 @@ public class FoxSettings
         }
     }
     
+    public string FeedInPriorityFlagEntityID
+    {
+        get
+        {
+            return settings.FeedInPriorityFlagEntityID;
+        }
+        set
+        {
+            settings.FeedInPriorityFlagEntityID = value;
+        }
+    }
+
+    public string DischargeFlagEntityID
+    {
+        get
+        {
+            return settings.DischargeFlagEntityID;
+        }
+        set
+        {
+            settings.DischargeFlagEntityID = value;
+        }
+    }
+
     public bool UseOffPeakFlag
     {
         get

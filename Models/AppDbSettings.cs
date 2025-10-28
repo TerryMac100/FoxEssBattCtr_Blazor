@@ -18,5 +18,9 @@ public class AppDbSettings
 
     public string BackupFlagEntityID { get; set; } = string.Empty;
 
+    public string FeedInPriorityFlagEntityID { get; set; } = string.Empty;
+    
+    public string DischargeFlagEntityID { get; set; } = string.Empty;
+
     public bool UseOffPeakFlag { get; set; }
 }

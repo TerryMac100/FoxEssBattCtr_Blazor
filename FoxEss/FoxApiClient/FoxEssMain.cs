@@ -213,46 +213,24 @@ public class FoxEssMain
         }
     }
 
-    public SetSchedule GetBackupSegment(DateTime dateTime)
+    public void SetSegment(DateTime dateTime, int mode)
     {
-        var modes = GetModes();
-
-        var seg = (dateTime.Hour * 2);
+        var seg = dateTime.Hour * 2;
         if (dateTime.Minute >= 30)
             seg += 1;
 
-        modes[seg] = 1; // Backup
-
-        var schedule = GetScheduleFromModes(modes);
-
-        //var schedule = GetSelectedSchedule();
-        //var section = new SetTimeSegment(dateTime, "Backup");
-
-        //if (schedule.Groups is not null)
-        //    schedule.Groups.Add(section);
-
-        return schedule;
-    }
-
-    public SetSchedule GetChargeSegment(DateTime dateTime)
-    {
         var modes = GetModes();
 
-        var seg = (dateTime.Hour * 2);
-        if (dateTime.Minute >= 30)
-            seg += 1;
-
-        modes[seg] = 0; // ForceCharge
-
-        var schedule = GetScheduleFromModes(modes);
-
-        //var schedule = GetSelectedSchedule();
-        //var section = new SetTimeSegment(dateTime, "ForceCharge");
-
-        //if (schedule.Groups is not null)
-        //    schedule.Groups.Add(section);
-
-        return schedule;
+        if (modes[seg] != mode)
+        {
+            modes[seg] = mode;
+            var schedule = GetScheduleFromModes(modes);
+            SetSchedule(schedule);
+        }
+        else
+        {
+            m_logger.LogInformation($"Segment at {dateTime} already set to mode {mode}");
+        }
     }
 
     public bool[] GetOffPeakSegments()

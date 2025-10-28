@@ -46,7 +46,6 @@ public class FoxBatteryControl
         m_lastSlot = m_currentSlot;
         m_monitorState = MonitorSchedule.Reset;
         m_logger.LogInformation($"FoxESS - Re-starting");
-        m_requestDefaultSchedule.CallService("turn_off");
     }
 
     private int m_currentSlot
@@ -78,8 +77,8 @@ public class FoxBatteryControl
 
     private bool m_octupusOffPeak => new Entity(m_ha, m_settings.OffPeakFlagEntityID).State == "on";
     private bool m_foxBackupActive => new Entity(m_ha, m_settings.BackupFlagEntityID).State == "on";
-
-    private Entity m_requestDefaultSchedule => m_ha.Entity("input_boolean.dev_netdaemon_fox_ess_default_schedule_active");
+    private bool m_foxFeedInActive => new Entity(m_ha, m_settings.FeedInPriorityFlagEntityID).State == "on";
+    private bool m_foxDischargeActive => new Entity(m_ha, m_settings.DischargeFlagEntityID).State == "on";
 
     private void SendSchedule(SetSchedule schedule)
     {
@@ -95,12 +94,6 @@ public class FoxBatteryControl
     /// </summary>
     private void RunMonitor()
     {
-        if (m_requestDefaultSchedule.State == "on")
-        {
-            SendSchedule(m_foxEssMain.GetSelectedSchedule());
-            m_requestDefaultSchedule.CallService("turn_off");       // TurnOff();
-        }
-
         var dateTimeNow = DateTime.Now;
 
         // Don't make any change in the first and last minutes of the period
@@ -146,7 +139,7 @@ public class FoxBatteryControl
                     if (m_octupusOffPeak)
                     {
                         m_logger.LogInformation("Setting up Battery Charge segment");
-                        SendSchedule(m_foxEssMain.GetChargeSegment(dateTimeNow));
+                        m_foxEssMain.SetSegment(dateTimeNow, 0); // 0 = ForceCharge
 
                         MonitorState = MonitorSchedule.ChargePeriod;
                     }
@@ -155,7 +148,7 @@ public class FoxBatteryControl
                         if (m_foxBackupActive)
                         {
                             m_logger.LogInformation("Setting up Battery Backup segment");
-                            SendSchedule(m_foxEssMain.GetBackupSegment(dateTimeNow));
+                            m_foxEssMain.SetSegment(dateTimeNow, 1);                // 1 = Backup
                             MonitorState = MonitorSchedule.BackupPeriod;
                         }
                     }
@@ -183,7 +176,7 @@ public class FoxBatteryControl
                         if (currentSlot != m_lastSlot)      // New slot detected
                         {
                             m_logger.LogInformation($"FoxESS - Extending charge period");
-                            SendSchedule(m_foxEssMain.GetChargeSegment(dateTimeNow));
+                            m_foxEssMain.SetSegment(dateTimeNow, 0); // 0 = ForceCharge
                         }
                     }
                 }
@@ -210,7 +203,7 @@ public class FoxBatteryControl
                         if (currentSlot != m_lastSlot)      // New slot detected
                         {
                             m_logger.LogInformation($"FoxESS - Extending Backup period");
-                            SendSchedule(m_foxEssMain.GetBackupSegment(dateTimeNow));
+                            m_foxEssMain.SetSegment(dateTimeNow, 1);  // 1 = Backup
                         }
                     }
                 }
@@ -257,7 +250,9 @@ public class FoxBatteryControl
         PeakDayRate,
         OverNight,
         ChargePeriod,
-        BackupPeriod
+        BackupPeriod,
+        FeedInPeriod,
+        DischargePeriod
     }
 
     private const int m_schedualRateSeconds = 10;

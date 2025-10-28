@@ -53,6 +53,19 @@ else
                     <InputText id="BackupFlagEntityID" @bind-Value="m_foxSettings.BackupFlagEntityID" class="form-control" />
                     <ValidationMessage For="() => m_foxSettings.BackupFlagEntityID" class="text-danger" />
                 </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">HA Feed In Priority Flag ID:</label>
+                    <InputText id="FeedInPriorityFlagEntityID" @bind-Value="m_foxSettings.FeedInPriorityFlagEntityID" class="form-control" />
+                    <ValidationMessage For="() => m_foxSettings.FeedInPriorityFlagEntityID" class="text-danger" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">HA Discharge Flag ID:</label>
+                    <InputText id="DischargeFlagEntityID" @bind-Value="m_foxSettings.DischargeFlagEntityID" class="form-control" />
+                    <ValidationMessage For="() => m_foxSettings.DischargeFlagEntityID" class="text-danger" />
+                </div>
+
                 <button type="submit" class="btn btn-primary">Save</button>
             </EditForm>
         </div>
