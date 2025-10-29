@@ -44,7 +44,6 @@ public class FoxBatteryControl
 
     private void InitialiseMonitor()
     {
-        m_lastSlot = m_currentSlot;
         m_monitorState = MonitorSchedule.Reset;
         m_logger.LogInformation($"FoxESS - Re-starting");
     }
@@ -61,24 +60,6 @@ public class FoxBatteryControl
 
             return segmentIndex;
         }
-    }
-
-    private bool m_overNight
-    {
-        get
-        {
-            var time = DateTime.Now.TimeOfDay;
-
-            if (time >= new TimeSpan(23, 30, 0) || time < new TimeSpan(5, 30, 0))
-                return true;
-
-            return false;
-        }
-    }
-
-    private void SendSchedule(SetSchedule schedule)
-    {
-        m_foxEssMain.SetSchedule(schedule);
     }
 
     /// <summary>
@@ -100,40 +81,8 @@ public class FoxBatteryControl
             (dateTimeNow.Minute == 30))
             return;
 
-        // Protect the concurrency of current slot/last slot
-        var currentSlot = m_currentSlot;
-
-        switch (MonitorState)
-        {
-            case MonitorSchedule.Reset:
-                MonitorState = m_foxEssMain.SendSchedule(MonitorState);
-                break;
-
-            case MonitorSchedule.SelfUsePeriod:
-                MonitorState = m_foxEssMain.SendSchedule(MonitorState);
-                break;
-
-            case MonitorSchedule.FeedInPeriod:
-                MonitorState = m_foxEssMain.SendSchedule(MonitorState);
-                break;
-
-            case MonitorSchedule.DischargePeriod:
-                MonitorState = m_foxEssMain.SendSchedule(MonitorState);
-                break;
-
-            case MonitorSchedule.ChargePeriod:
-                MonitorState = m_foxEssMain.SendSchedule(MonitorState);
-                break;
-
-            case MonitorSchedule.BackupPeriod:
-                MonitorState = m_foxEssMain.SendSchedule(MonitorState);
-                break;
-        }
-
-        m_lastSlot = currentSlot;
+        MonitorState = m_foxEssMain.SendSchedule(MonitorState);
     }
-
-    private int m_lastSlot;
 
     private MonitorSchedule m_monitorState;
     private MonitorSchedule MonitorState

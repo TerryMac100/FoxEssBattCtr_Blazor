@@ -215,15 +215,15 @@ public class FoxEssMain
         }
     }
 
-
     private bool m_foxChargeActive => new Entity(m_ha, m_settings.OffPeakFlagEntityID).State == "on";
     private bool m_foxBackupActive => new Entity(m_ha, m_settings.BackupFlagEntityID).State == "on";
     private bool m_foxFeedInActive => new Entity(m_ha, m_settings.FeedInPriorityFlagEntityID).State == "on";
     private bool m_foxDischargeActive => new Entity(m_ha, m_settings.DischargeFlagEntityID).State == "on";
 
     public MonitorSchedule SendSchedule (MonitorSchedule currentState)
-    {          
-        int requiredMode = 2;       // SelfUse
+    {
+        MonitorSchedule requiredMode = MonitorSchedule.SelfUsePeriod;       // SelfUse
+        
         var modes = GetModes();
         var dateTime = DateTime.Now;
         var seg = dateTime.Hour * 2;
@@ -231,59 +231,33 @@ public class FoxEssMain
             seg += 1;
 
         if (m_foxChargeActive)
-            requiredMode = 0; // Charge
+            requiredMode = MonitorSchedule.ChargePeriod; // Charge
         else if (m_foxBackupActive)
-            requiredMode = 1; // Backup
+            requiredMode = MonitorSchedule.BackupPeriod; // Backup
         else if (m_foxFeedInActive)
-            requiredMode = 3; // FeedIn
+            requiredMode = MonitorSchedule.FeedInPeriod; // FeedIn
         else if (m_foxDischargeActive)
-            requiredMode = 4; // Discharge
+            requiredMode = MonitorSchedule.DischargePeriod; // Discharge
         else
         {
             // get required mode from schedule
-            requiredMode = modes[seg];
+            requiredMode = (MonitorSchedule)modes[seg];
         }
 
-        switch (requiredMode)
+        if (currentState == requiredMode)
         {
-            case 0:
-                if (currentState == MonitorSchedule.ChargePeriod)
-                    return MonitorSchedule.ChargePeriod;
-                break;
-            case 1:
-                if (currentState == MonitorSchedule.BackupPeriod)
-                    return MonitorSchedule.BackupPeriod;
-                break;
-            case 3:
-                if (currentState == MonitorSchedule.FeedInPeriod )
-                    return MonitorSchedule.FeedInPeriod;
-                break;
-            case 4:
-                if (currentState == MonitorSchedule.DischargePeriod)   
-                    return MonitorSchedule.DischargePeriod;
-                break;
-            default:
-                if (currentState == MonitorSchedule.SelfUsePeriod)
-                    return MonitorSchedule.SelfUsePeriod;
-                break;
+            // Change to schedule not required
+            return requiredMode;
         }
 
-        modes[seg] = requiredMode;
+        modes[seg] = (int)requiredMode;
+
+
+
         var schedule = GetScheduleFromModes(modes);
         SetSchedule(schedule);
 
-        switch (requiredMode) { 
-            case 0:
-                return MonitorSchedule.ChargePeriod;
-            case 1:
-                return MonitorSchedule.BackupPeriod;
-            case 3:
-                return MonitorSchedule.FeedInPeriod;
-            case 4:
-                return MonitorSchedule.DischargePeriod;
-            default:
-                return MonitorSchedule.SelfUsePeriod;
-        }
+        return requiredMode;
     }
 
 
@@ -333,12 +307,12 @@ public class FoxEssMain
 
     public enum MonitorSchedule
     {
-        ChargePeriod,
-        BackupPeriod,
-        SelfUsePeriod,
-        FeedInPeriod,
-        DischargePeriod,
-        Reset
+        ChargePeriod = 0,
+        BackupPeriod = 1,
+        SelfUsePeriod = 2,
+        FeedInPeriod = 3,
+        DischargePeriod = 4,
+        Reset = 5
     }
 
     private const string lang = "en";

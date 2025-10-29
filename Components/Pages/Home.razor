@@ -144,6 +144,9 @@
     protected override void OnAfterRender(bool firstRender)
     {
         selected = m_foxSettings.SelectedScheduleId;
-        SelectionUpdated();      
+        if (firstRender)
+        {
+            SelectionUpdated();
+        }
     }
 }
