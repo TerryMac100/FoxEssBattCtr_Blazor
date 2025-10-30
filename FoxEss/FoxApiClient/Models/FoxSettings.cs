@@ -30,20 +30,37 @@ public class FoxSettings
         return mode;
     }
 
+    public BatteryMode? GetMode(int index, int scheduleId)
+    {
+        using var dbContext = m_dbFactory.CreateDbContext();
+        var mode = dbContext.Mode.FirstOrDefault(m => m.TimeSlot == index && m.SchedualId == scheduleId);
+
+        return mode;
+    }
+
     public int GetModeValue(int index)
     {
         var mode = GetMode(index);
         if (mode is null)
             return 2;
 
+        return GetModeValue(index, Schedule.Id);
+    }
+
+    public int GetModeValue(int index, int scheduleId)
+    {
+        var mode = GetMode(index, scheduleId);
+        if (mode is null)
+            return 2;
+
         return mode.BattMode;
     }
 
-    public void SetMode(int index, int modeValue)
+    public void SetMode(int index, int modeValue, int scheduleId)
     {
         using var dbContext = m_dbFactory.CreateDbContext();
 
-        var mode = dbContext.Mode.FirstOrDefault(m => m.TimeSlot == index && m.SchedualId == SelectedScheduleId);
+        var mode = dbContext.Mode.FirstOrDefault(m => m.TimeSlot == index && m.SchedualId == scheduleId);
         if (mode is null)
         {
             mode = new BatteryMode

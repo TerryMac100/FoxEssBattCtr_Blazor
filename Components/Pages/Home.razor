@@ -29,6 +29,16 @@
         horisontal-align: center;
     }
 
+    .save-cancel
+    {
+        margin: 4px 0px;
+        width: 80px;
+    }
+
+    .b-margin {
+        margin: 4px 0px;
+    }
+
     .radio_1[type='radio']:checked {
         background: Green;
     }
@@ -42,23 +52,22 @@
         font-size: 8px;
     }
 
-    .b-margin{
-        margin: 4px 0px;
-    }
 
     .t-centre{
         text-align: center;
     }
 </style>
 
-<div>
+<div style="max-width: 280px;">
     <select class="form-control"  style="width: 280px" value="@selected" @onchange="SetSelected">
         @foreach (var schedule in m_foxSettings.AllSchedules.OrderBy(m => m.Id))
         {
             <option selected value="@schedule.Id">@schedule.Name</option>
         }
     </select>
-    <button class="btn btn-primary b-margin" padding=20 @onclick="UpdateProduce">Send</button>
+    <button class="btn btn-primary b-margin" padding=20 hidden="@editActive" @onclick="UpdateProduce">Send</button>
+    <button class="btn btn-primary save-cancel" padding=20 hidden="@editShow" @onclick="SaveChanges">Save</button>
+    <button class="btn btn-primary save-cancel" padding=20 hidden="@editShow" @onclick="CancelChanges" style="float: right;">Cancel</button>
 </div>
 
 <table>
@@ -102,16 +111,62 @@
                   
 @code
 {
+    private bool m_editActive;
+
+    private bool editActive
+    {
+        get => m_editActive;
+        set
+        {
+            m_editActive = value;
+            StateHasChanged();
+        }
+    }
+
+    private bool editShow => !editActive;
+
     private int selected { get; set; }
 
     private string[] buttionNames = { "Charge ", "Backup ", "SelfUse", "Feed_In", "Dis_Chg" };
 
     private bool[,] buttonStates = new bool[5, 48];
 
+    private void SaveChanges()
+    {
+        for (int row = 0; row < 48; row++)
+        {
+            var x = 2;
+
+            if (buttonStates[0, row])
+                x = 0;
+            else if (buttonStates[1, row])
+                x = 1;
+            else if (buttonStates[3, row])
+                x = 3;
+            else if (buttonStates[4, row])
+                x = 4;
+
+            m_foxSettings.SetMode(row, x, selected);
+        }
+        editActive = false;
+    }
+
+    private void CancelChanges()
+    {
+        selected = m_foxSettings.SelectedScheduleId;
+        SelectionUpdated();
+        editActive = false;
+    }
+
     private void OnCheckChange(int row, int x)
     {
-        buttonStates[x, row] = true;
-        m_foxSettings.SetMode(row, x);
+        for (int m = 0; m < 5; m++)
+            if (m == x)
+                buttonStates[m, row] = true;
+            else
+                buttonStates[m, row] = false;
+
+        editActive = true;
     }
 
     private void UpdateProduce()
@@ -124,29 +179,37 @@
         if (e.Value != null)
             selected = Convert.ToInt32(e.Value.ToString());
 
-        m_foxSettings.SelectedScheduleId = selected;
-
         SelectionUpdated();
     }
 
     private void SelectionUpdated()
     {
-        buttonStates = new bool[5, 48];
         for (int row = 0; row < 48; row++)
         {
-            var mode = m_foxSettings.GetModeValue(row);
-            buttonStates[mode, row] = true;
+            var mode = m_foxSettings.GetModeValue(row, selected);
+            for (int x = 0; x < 5; x++)
+                if (mode == x)
+                    buttonStates[x, row] = true;
+                else
+                    buttonStates[x, row] = false;
+            StateHasChanged();
         }
 
-        StateHasChanged();
+        editActive = true;
     }
 
     protected override void OnAfterRender(bool firstRender)
     {
-        selected = m_foxSettings.SelectedScheduleId;
         if (firstRender)
         {
             SelectionUpdated();
+            editActive = false;
         }
+        StateHasChanged();
+    }
+
+    protected override void OnInitialized()
+    {
+        selected = m_foxSettings.SelectedScheduleId;
     }
 }
