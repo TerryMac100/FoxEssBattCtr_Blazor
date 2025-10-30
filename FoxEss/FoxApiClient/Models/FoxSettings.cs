@@ -17,6 +17,11 @@ public class FoxSettings
         m_logger = logger;
     }
 
+    /// <summary>
+    /// Used to see if selected schedule has changed
+    /// </summary>
+    public int LastScheduleId { get; set; }
+
     public BatteryMode? GetMode(int index)
     {
         using var dbContext = m_dbFactory.CreateDbContext();

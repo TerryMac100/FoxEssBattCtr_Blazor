@@ -1,13 +1,10 @@
-﻿using BlazorBattControl.Data;
-using BlazorBattControl.NetDaemon;
-using Microsoft.EntityFrameworkCore;
+﻿using BlazorBattControl.NetDaemon;
 using NetDaemon.AppModel;
 using NetDaemon.HassModel;
 using NetDaemon.HassModel.Entities;
 using NetDaemonMain.apps.FoxEss.FoxApiClient.Models;
 using Newtonsoft.Json;
 using RestSharp;
-using System;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -17,16 +14,19 @@ public class FoxEssMain
 {
     private readonly IHaContext m_ha;
     private readonly FoxSettings m_settings;
+    private readonly IConfiguration m_config;
     private readonly ILogger<FoxEssMain> m_logger;
 
     public FoxEssMain(
         IHaContext ha,
         FoxSettings settings,
         IAppConfig<FoxBatteryControlSettings> foxBatteryControlSettings,
+        IConfiguration config,
         ILogger<FoxEssMain> logger)
     {
         m_ha = ha;
         m_settings = settings;
+        m_config = config;
         m_logger = logger;
     }
 
@@ -177,6 +177,9 @@ public class FoxEssMain
                 m_logger.LogInformation($"API Call disabled in debug build");
             else
                 m_logger.LogInformation($"API Call disabled");
+
+            // Update Schedule Id
+            m_settings.LastScheduleId = m_settings.SelectedScheduleId;
             return;
         }
 
@@ -206,6 +209,8 @@ public class FoxEssMain
                 else
                     m_logger.LogWarning($"Something went wrong return value null");
 
+                // Update Schedule Id
+                m_settings.LastScheduleId = m_settings.SelectedScheduleId;
                 return;
             }
         }
@@ -244,15 +249,15 @@ public class FoxEssMain
             requiredMode = (MonitorSchedule)modes[seg];
         }
 
-        if (currentState == requiredMode)
+
+        if ((currentState == requiredMode) && 
+            (m_settings.LastScheduleId == m_settings.SelectedScheduleId))
         {
             // Change to schedule not required
             return requiredMode;
         }
 
         modes[seg] = (int)requiredMode;
-
-
 
         var schedule = GetScheduleFromModes(modes);
         SetSchedule(schedule);
