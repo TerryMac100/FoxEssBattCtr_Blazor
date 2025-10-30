@@ -63,9 +63,11 @@ public class FoxEssMain
         var request = new RestRequest(domain + path, method);
 
         long time = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-        var signature = ToHexString(path, m_settings.ApiKey, time.ToString());
 
-        request.AddHeader("token", m_settings.ApiKey);
+        var apiKey = m_config.GetSection("FoxEss:ApiKey").Value?.ToString() ?? string.Empty;
+        var signature = ToHexString(path, apiKey, time.ToString());
+        request.AddHeader("token", apiKey);
+
         request.AddHeader("signature", signature);
         request.AddHeader("timestamp", time.ToString());
         request.AddHeader("lang", lang);
@@ -107,9 +109,10 @@ public class FoxEssMain
         var schedule = new SetSchedule()               
         { 
             Groups = new List<SetTimeSegment>(),
-            DeviceSN = m_settings.DeviceSN
+            DeviceSN = m_config.GetSection("FoxEss:DeviceSN").Value?.ToString() ?? string.Empty
         };
 
+        
         int i = 0;
         while (i < modes.Length)
         {
@@ -186,7 +189,6 @@ public class FoxEssMain
         try
         {
             var request = GetHeader("/op/v0/device/scheduler/enable", RestSharp.Method.Post);
-
             request.AddBody(setSchedule);
 
             var client = new RestClient();
