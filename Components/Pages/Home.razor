@@ -125,7 +125,20 @@
 
     private bool editShow => !editActive;
 
-    private int selected { get; set; }
+    /// <summary>
+    /// Hold the selected schedule on the settings object as this is a singleton
+    /// </summary>
+    private int selected 
+    { 
+        get
+        {
+            return m_foxSettings.selectorId;
+        }
+        set 
+        { 
+            m_foxSettings.selectorId = value;
+        }
+    }
 
     private string[] buttionNames = { "Charge ", "Backup ", "SelfUse", "Feed_In", "Dis_Chg" };
 
@@ -133,6 +146,8 @@
 
     private void SaveChanges()
     {
+        m_foxSettings.SaveSelector();
+
         for (int row = 0; row < 48; row++)
         {
             var x = 2;
@@ -192,7 +207,6 @@
                     buttonStates[x, row] = true;
                 else
                     buttonStates[x, row] = false;
-            StateHasChanged();
         }
 
         editActive = true;
@@ -202,14 +216,13 @@
     {
         if (firstRender)
         {
+            selected = m_foxSettings.SelectedScheduleId;
             SelectionUpdated();
             editActive = false;
         }
-        StateHasChanged();
     }
 
     protected override void OnInitialized()
     {
-        selected = m_foxSettings.SelectedScheduleId;
     }
 }

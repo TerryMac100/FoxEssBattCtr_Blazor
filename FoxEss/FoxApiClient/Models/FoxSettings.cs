@@ -119,7 +119,15 @@ public class FoxSettings
 
             return m_appDSsettings;
         }
-    } 
+    }
+
+
+    public int selectorId;
+
+    public void SaveSelector()
+    {
+        SelectedScheduleId = selectorId;
+    }
 
     public int SelectedScheduleId
     {
