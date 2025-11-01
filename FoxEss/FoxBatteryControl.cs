@@ -36,7 +36,7 @@ public class FoxBatteryControl
 
         InitialiseMonitor();
 
-        scheduler.RunEvery(TimeSpan.FromSeconds(m_schedualRateSeconds), async () =>
+        scheduler.RunEvery(TimeSpan.FromSeconds(m_schedualRateSeconds), () =>
         {
             RunMonitor();
         });
@@ -46,20 +46,6 @@ public class FoxBatteryControl
     {
         m_monitorState = MonitorSchedule.Reset;
         m_logger.LogInformation($"FoxESS - Re-starting");
-    }
-
-    private int m_currentSlot
-    {
-        get
-        {
-            var time = DateTime.Now;
-
-            var segmentIndex = time.Hour * 2;
-            if (time.Minute >= 30)
-                segmentIndex += 1;
-
-            return segmentIndex;
-        }
     }
 
     /// <summary>
@@ -125,5 +111,5 @@ public class FoxBatteryControl
         get { return m_monitorState; }
     }
 
-    private const int m_schedualRateSeconds = 10;
+    private const int m_schedualRateSeconds = 3;
 }

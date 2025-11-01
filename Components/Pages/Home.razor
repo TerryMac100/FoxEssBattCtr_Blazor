@@ -4,10 +4,13 @@
 @using BlazorBattControl.Models
 @using Microsoft.EntityFrameworkCore
 @using NetDaemonMain.apps.FoxEss.FoxApiClient.Models
+@using System.ComponentModel
 
 @inject NavigationManager NavManager
 @inject FoxEssMain m_foxEssMain
 @inject FoxSettings m_foxSettings
+
+@implements IDisposable 
 
 @rendermode InteractiveServer
 
@@ -65,9 +68,10 @@
             <option selected value="@schedule.Id">@schedule.Name</option>
         }
     </select>
-    <button class="btn btn-primary b-margin" padding=20 hidden="@editActive" @onclick="UpdateProduce">Send</button>
+    <button class="btn btn-primary b-margin" padding=20 hidden="@editActive" @onclick="SendSchedule">Send</button>
     <button class="btn btn-primary save-cancel" padding=20 hidden="@editShow" @onclick="SaveChanges">Save</button>
     <button class="btn btn-primary save-cancel" padding=20 hidden="@editShow" @onclick="CancelChanges" style="float: right;">Cancel</button>
+    <label hidden="@editActive" style="float: right; vertical-align: central">@m_foxSettings.StatusMessage</label>
 </div>
 
 <table>
@@ -184,9 +188,9 @@
         editActive = true;
     }
 
-    private void UpdateProduce()
+    private async Task SendSchedule()
     {
-        m_foxEssMain.SendSelectedSchedule();
+        await m_foxEssMain.SendSelectedScheduleAsync();
     }
 
     private void SetSelected(ChangeEventArgs e)
@@ -222,7 +226,18 @@
         }
     }
 
-    protected override void OnInitialized()
+    void MessageChanged(object? sender, PropertyChangedEventArgs eventArgs)
     {
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    protected override void OnInitialized() 
+    { 
+        m_foxSettings.PropertyChanged += MessageChanged; 
+    }
+
+    public void Dispose()
+    {
+        m_foxSettings.PropertyChanged -= MessageChanged;            
     }
 }

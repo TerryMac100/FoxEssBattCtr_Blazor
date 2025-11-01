@@ -76,10 +76,11 @@ public class FoxEssMain
         return request;
     }
 
-    public void SendSelectedSchedule()
+    public async Task SendSelectedScheduleAsync()
     {
         var schedule = GetSelectedSchedule();
-        SetSchedule(schedule);
+        
+        await SetScheduleAsync(schedule);
     }
 
     private int[] GetModes()        
@@ -163,8 +164,10 @@ public class FoxEssMain
 
     private string m_callsEnabled => m_ha.Entity("input_boolean.dev_netdaemon_fox_ess_backup_active").State;
 
-    public async void SetSchedule(SetSchedule setSchedule)
+    public async Task SetScheduleAsync(SetSchedule setSchedule)
     {
+        m_settings.StatusMessage = "Sending";
+
         // Disable the calls in debug builds (but keep the code in place for testing)
         bool m_debugBuild = true;
 #if DEBUG
@@ -176,6 +179,12 @@ public class FoxEssMain
 
         if (m_callsEnabled == "off" || m_debugBuild)
         {
+            // Simulate sending delay
+            await Task.Run(() =>
+            {
+                Thread.Sleep(1000);
+            });
+
             if (m_debugBuild)
                 m_logger.LogInformation($"API Call disabled in debug build");
             else
@@ -183,6 +192,8 @@ public class FoxEssMain
 
             // Update Schedule Id
             m_settings.LastScheduleId = m_settings.SelectedScheduleId;
+
+            m_settings.StatusMessage = "OK";
             return;
         }
 
@@ -227,7 +238,7 @@ public class FoxEssMain
     private bool m_foxFeedInActive => new Entity(m_ha, m_settings.FeedInPriorityFlagEntityID).State == "on";
     private bool m_foxDischargeActive => new Entity(m_ha, m_settings.DischargeFlagEntityID).State == "on";
 
-    public MonitorSchedule SendSchedule (MonitorSchedule currentState)
+    public MonitorSchedule SendSchedule(MonitorSchedule currentState)
     {
         MonitorSchedule requiredMode = MonitorSchedule.SelfUsePeriod;       // SelfUse
         
@@ -251,7 +262,6 @@ public class FoxEssMain
             requiredMode = (MonitorSchedule)modes[seg];
         }
 
-
         if ((currentState == requiredMode) && 
             (m_settings.LastScheduleId == m_settings.SelectedScheduleId))
         {
@@ -262,31 +272,33 @@ public class FoxEssMain
         modes[seg] = (int)requiredMode;
 
         var schedule = GetScheduleFromModes(modes);
-        SetSchedule(schedule);
 
+        // Await the set schedule task
+        var task = Task.Run(async () => await SetScheduleAsync(schedule));
+        
         return requiredMode;
     }
 
 
-    public void SetSegment(DateTime dateTime, int mode)
-    {
-        var seg = dateTime.Hour * 2;
-        if (dateTime.Minute >= 30)
-            seg += 1;
+    //public void SetSegment(DateTime dateTime, int mode)
+    //{
+    //    var seg = dateTime.Hour * 2;
+    //    if (dateTime.Minute >= 30)
+    //        seg += 1;
 
-        var modes = GetModes();
+    //    var modes = GetModes();
 
-        if (modes[seg] != mode)
-        {
-            modes[seg] = mode;
-            var schedule = GetScheduleFromModes(modes);
-            SetSchedule(schedule);
-        }
-        else
-        {
-            m_logger.LogInformation($"Segment at {dateTime} already set to mode {mode}");
-        }
-    }
+    //    if (modes[seg] != mode)
+    //    {
+    //        modes[seg] = mode;
+    //        var schedule = GetScheduleFromModes(modes);
+    //        SetSchedule(schedule);
+    //    }
+    //    else
+    //    {
+    //        m_logger.LogInformation($"Segment at {dateTime} already set to mode {mode}");
+    //    }
+    //}
 
     public bool[] GetOffPeakSegments()
     {

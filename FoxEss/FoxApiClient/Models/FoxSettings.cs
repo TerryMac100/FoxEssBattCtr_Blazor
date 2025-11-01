@@ -2,10 +2,11 @@
 using BlazorBattControl.FoxEss.FoxApiClient;
 using BlazorBattControl.Models;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 
 namespace NetDaemonMain.apps.FoxEss.FoxApiClient.Models;
 
-public class FoxSettings
+public class FoxSettings : INotifyPropertyChanged
 {
     private readonly IDbContextFactory<BlazorBattControlContext> m_dbFactory;
     private readonly ILogger<FoxEssMain> m_logger;
@@ -16,6 +17,7 @@ public class FoxSettings
         m_dbFactory = dbFactory;
         m_logger = logger;
     }
+    
 
     /// <summary>
     /// Used to see if selected schedule has changed
@@ -253,4 +255,25 @@ public class FoxSettings
     public int MinSoc => Schedule.MinSoc;
     public int MinDischargeSoc => Schedule.MinDischargeSoc;
     public int DischargePower => Schedule.DischargePower;
+
+    private string m_statusMessage;
+
+    public string StatusMessage
+    {
+        get
+        {
+            return m_statusMessage;
+        }
+        set
+        {
+            m_statusMessage = value;
+            if (PropertyChanged != null)
+            {
+
+                PropertyChanged(this, new PropertyChangedEventArgs(nameof(StatusMessage)));
+            }
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 }

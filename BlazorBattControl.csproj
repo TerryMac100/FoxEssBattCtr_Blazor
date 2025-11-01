@@ -19,6 +19,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.10" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
+    <PackageReference Include="Microsoft.VisualStudio.Utilities" Version="17.14.40264" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
     <PackageReference Include="NetDaemon.AppModel" Version="25.36.0" />
     <PackageReference Include="NetDaemon.Client" Version="25.36.0" />
