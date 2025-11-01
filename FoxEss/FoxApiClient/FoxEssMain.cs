@@ -4,6 +4,7 @@ using NetDaemon.HassModel;
 using NetDaemon.HassModel.Entities;
 using NetDaemonMain.apps.FoxEss.FoxApiClient.Models;
 using Newtonsoft.Json;
+using NuGet.Configuration;
 using RestSharp;
 using System.Security.Cryptography;
 using System.Text;
@@ -238,67 +239,105 @@ public class FoxEssMain
     private bool m_foxFeedInActive => new Entity(m_ha, m_settings.FeedInPriorityFlagEntityID).State == "on";
     private bool m_foxDischargeActive => new Entity(m_ha, m_settings.DischargeFlagEntityID).State == "on";
 
-    public MonitorSchedule SendSchedule(MonitorSchedule currentState)
+    public int GetSegment()
     {
-        MonitorSchedule requiredMode = MonitorSchedule.SelfUsePeriod;       // SelfUse
-        
-        var modes = GetModes();
         var dateTime = DateTime.Now;
+
         var seg = dateTime.Hour * 2;
         if (dateTime.Minute >= 30)
             seg += 1;
 
-        if (m_foxChargeActive)
-            requiredMode = MonitorSchedule.ChargePeriod; // Charge
-        else if (m_foxBackupActive)
-            requiredMode = MonitorSchedule.BackupPeriod; // Backup
-        else if (m_foxFeedInActive)
-            requiredMode = MonitorSchedule.FeedInPeriod; // FeedIn
-        else if (m_foxDischargeActive)
-            requiredMode = MonitorSchedule.DischargePeriod; // Discharge
-        else
-        {
-            // get required mode from schedule
-            requiredMode = (MonitorSchedule)modes[seg];
-        }
-
-        if ((currentState == requiredMode) && 
-            (m_settings.LastScheduleId == m_settings.SelectedScheduleId))
-        {
-            // Change to schedule not required
-            return requiredMode;
-        }
-
-        modes[seg] = (int)requiredMode;
-
-        var schedule = GetScheduleFromModes(modes);
-
-        // Await the set schedule task
-        var task = Task.Run(async () => await SetScheduleAsync(schedule));
-        
-        return requiredMode;
+        return seg;
     }
 
+    private MonitorSchedule SendModes(int[] modes, int seg, MonitorSchedule state)
+    {
+        if (modes[seg] != (int)state)
+        {
+            modes[seg] = (int)state;
+            SetSchedule(GetScheduleFromModes(modes));
+        }
+        return state;
+    }
 
-    //public void SetSegment(DateTime dateTime, int mode)
-    //{
-    //    var seg = dateTime.Hour * 2;
-    //    if (dateTime.Minute >= 30)
-    //        seg += 1;
+    private bool backupActive = false;
+    private bool chargeActive = false;
+    private bool dischargeActive = false;
+    private bool feedActive = false;
 
-    //    var modes = GetModes();
+    public MonitorSchedule SendSchedule(MonitorSchedule currentState)
+    {
+        var modes = GetModes();
+        var seg = GetSegment();
+        
+        // Clear any set active flags if segment has changed
+        if (seg != m_lastSegment)
+        {
+            chargeActive = false;
+            backupActive = false;
+            feedActive = false;
+            dischargeActive = false;
+        }
 
-    //    if (modes[seg] != mode)
-    //    {
-    //        modes[seg] = mode;
-    //        var schedule = GetScheduleFromModes(modes);
-    //        SetSchedule(schedule);
-    //    }
-    //    else
-    //    {
-    //        m_logger.LogInformation($"Segment at {dateTime} already set to mode {mode}");
-    //    }
-    //}
+        m_lastSegment = seg;    // Don't need this again so set it to current segment
+
+        if (m_foxChargeActive)
+            if (chargeActive)
+                return MonitorSchedule.ChargePeriod;        // Charge already set so just return
+            else
+            {
+                chargeActive = true;
+                return SendModes(modes, seg, MonitorSchedule.ChargePeriod);
+            }
+
+        if (m_foxBackupActive)
+            if (backupActive)
+                return MonitorSchedule.BackupPeriod;        // Charge already set so just return
+            else
+            {
+                backupActive = true;
+                return SendModes(modes, seg, MonitorSchedule.BackupPeriod);
+            }
+
+        if (m_foxFeedInActive)
+            if (feedActive)
+                return MonitorSchedule.FeedInPeriod;        // Charge already set so just return
+            else
+            {
+                feedActive = true;
+                return SendModes(modes, seg, MonitorSchedule.FeedInPeriod);
+            }
+
+        if (m_foxDischargeActive)
+            if (dischargeActive)
+                return MonitorSchedule.DischargePeriod;        // Charge already set so just return
+            else
+            {
+                dischargeActive = true;
+                return SendModes(modes, seg, MonitorSchedule.DischargePeriod);
+            }
+
+        // See if any charge active periods are set that now need clearing
+        if (chargeActive || backupActive || feedActive || dischargeActive)
+        {
+            chargeActive = false;
+            backupActive = false;
+            feedActive = false;
+            dischargeActive = false;
+            SetSchedule(GetScheduleFromModes(modes));
+        }
+
+        return (MonitorSchedule)modes[seg];
+
+    }
+
+    int m_lastSegment = -1;
+
+    private void SetSchedule(SetSchedule schedule)
+    {
+        var task = Task.Run(async () => await SetScheduleAsync(schedule));
+    }
+
 
     public bool[] GetOffPeakSegments()
     {
