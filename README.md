@@ -3,6 +3,13 @@
 <p>This application is built using Blazor Server, NetDaemon and SQLite for data storage. 
 It provides a user-friendly interface for managing and monitoring FoxESS battery systems.</p>
 
+## Features
+	- Gives easy access to FoxESS battery control settings in 30 minutes increments
+	- Works directly with the Fox Cloud API so no additional hardware required
+	- Can be deployed and run as an Add On to Home Assistant
+	- Can easily be configured link with Home Assistant so it can modify schedules
+	- Designed to make minimal calls to the Fox Cloud API
+
 ## Prerequisites
 	Visual Studio 2022 or later with .NET 9.0 SDK or later installed.
 
