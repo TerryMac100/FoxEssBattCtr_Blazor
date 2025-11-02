@@ -67,18 +67,13 @@
         {
             if (schedule.Id != selected)
             {
-                <option selected value="@schedule.Id">@schedule.Name</option>
+                <option value="@schedule.Id">@schedule.Name</option>
             }
-
-        }
-        @{
-            var sch = m_foxSettings.AllSchedules.FirstOrDefault(s => s.Id == selected);
-            if (sch != null)
+            else
             {
-                <option selected value="@sch.Id">@sch.Name</option>
+                <option value="@schedule.Id" selected>@schedule.Name</option>
             }
         }
-
 
     </select>
     <button class="btn btn-primary b-margin" padding=20 hidden="@editActive" @onclick="SendSchedule">Send</button>
@@ -152,7 +147,7 @@
             return m_foxSettings.selectorId;
         }
         set 
-        { 
+        {
             m_foxSettings.selectorId = value;
         }
     }
@@ -163,7 +158,6 @@
 
     private void SaveChanges()
     {
-        m_foxSettings.SaveSelector();
 
         for (int row = 0; row < 48; row++)
         {
@@ -180,6 +174,9 @@
 
             m_foxSettings.SetMode(row, x, selected);
         }
+
+        m_foxSettings.SaveSelector();
+
         editActive = false;
     }
 

@@ -129,6 +129,7 @@ public class FoxSettings : INotifyPropertyChanged
     public void SaveSelector()
     {
         SelectedScheduleId = selectorId;
+        UpdateSettings();
     }
 
     public int SelectedScheduleId
@@ -140,7 +141,6 @@ public class FoxSettings : INotifyPropertyChanged
         set
         {
             settings.SeletedScheduleId = value;
-            UpdateSettings();
         }
     }
 

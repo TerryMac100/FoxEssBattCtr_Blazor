@@ -82,17 +82,17 @@ public class SetTimeSegment : GetTimeSegment
             EndMinute = 59;
     }
 
-    public SetTimeSegment(Group group)
-    {
-        WorkMode = group.WorkMode;
-        Enable = group.Enabled;
-        MinSocOnGrid = group.MinSocOnGrid;
-        StartHour = group.StartHour;
-        StartMinute = group.StartMinute;
-        EndHour = group.EndHour;
-        EndMinute = group.EndMinute;
-        FdSoc = group.FdSoc;
-        FdPwr = group.FdPwr;
-    }
+    //public SetTimeSegment(Group group)
+    //{
+    //    WorkMode = group.WorkMode;
+    //    Enable = group.Enabled;
+    //    MinSocOnGrid = group.MinSocOnGrid;
+    //    StartHour = group.StartHour;
+    //    StartMinute = group.StartMinute;
+    //    EndHour = group.EndHour;
+    //    EndMinute = group.EndMinute;
+    //    FdSoc = group.FdSoc;
+    //    FdPwr = group.FdPwr;
+    //}
     public int Enable { get; set; } = 1;
 }

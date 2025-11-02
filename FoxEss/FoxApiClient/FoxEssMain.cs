@@ -21,7 +21,7 @@ public class FoxEssMain
     public FoxEssMain(
         IHaContext ha,
         FoxSettings settings,
-        IAppConfig<FoxBatteryControlSettings> foxBatteryControlSettings,
+        //IAppConfig<FoxBatteryControlSettings> foxBatteryControlSettings,
         IConfiguration config,
         ILogger<FoxEssMain> logger)
     {
@@ -91,7 +91,7 @@ public class FoxEssMain
         // Populate the array of modes setting undefined modes to 2 (SelfUse)
         for (int index = 0; index < 48; index++)
         {
-            modes[index] = m_settings.GetModeValue(index);
+            modes[index] = m_settings.GetModeValue(index, m_settings.SelectedScheduleId);
         }
 
         return modes;
@@ -113,8 +113,7 @@ public class FoxEssMain
             Groups = new List<SetTimeSegment>(),
             DeviceSN = m_config.GetSection("FoxEss:DeviceSN").Value?.ToString() ?? string.Empty
         };
-
-        
+      
         int i = 0;
         while (i < modes.Length)
         {
@@ -336,31 +335,6 @@ public class FoxEssMain
     private void SetSchedule(SetSchedule schedule)
     {
         var task = Task.Run(async () => await SetScheduleAsync(schedule));
-    }
-
-
-    public bool[] GetOffPeakSegments()
-    {
-        bool[] sections = new bool[48];
-
-        var defaultSchedual = GetSelectedSchedule();
-
-        if (defaultSchedual != null && defaultSchedual.Groups != null)
-            foreach (var period in defaultSchedual.Groups)
-            {
-                var startIndex = period.StartHour * 2;
-                if (period.StartMinute >= 30)
-                    startIndex += 1;
-
-                var endIndex = period.EndHour * 2;
-                if (period.EndMinute > 30)
-                    endIndex += 1;
-
-                for (int i = startIndex; i <= endIndex; i++)
-                    sections[i] = true;
-            }
-
-        return sections;
     }
 
     public enum MonitorSchedule

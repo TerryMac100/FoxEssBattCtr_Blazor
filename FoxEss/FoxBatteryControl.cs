@@ -19,19 +19,19 @@ public class FoxBatteryControl
     private readonly FoxEssMain m_foxEssMain;
     private readonly FoxSettings m_settings;
     private readonly ILogger<FoxBatteryControl> m_logger;
-    private readonly IAppConfig<FoxBatteryControlSettings> m_foxBatteryControlSettings;
+    //private readonly IAppConfig<FoxBatteryControlSettings> m_foxBatteryControlSettings;
 
     public FoxBatteryControl(IHaContext ha,
         INetDaemonScheduler scheduler,
         FoxEssMain foxEssMain,
         FoxSettings foxSettings,
-        IAppConfig<FoxBatteryControlSettings> foxBatteryControlSettings,
+        //IAppConfig<FoxBatteryControlSettings> foxBatteryControlSettings,
         ILogger<FoxBatteryControl> logger)
     {
         m_ha = ha;
         m_foxEssMain = foxEssMain;
         m_settings = foxSettings;
-        m_foxBatteryControlSettings = foxBatteryControlSettings;
+        //m_foxBatteryControlSettings = foxBatteryControlSettings;
         m_logger = logger;
 
         InitialiseMonitor();

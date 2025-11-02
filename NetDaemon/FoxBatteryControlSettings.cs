@@ -17,15 +17,15 @@ public class Group
     public int FdPwr { get; set; } = 0;
 }
 
-public class DefaultSchedule
-{
-    public Group[]? Groups { get; set; }
-}
+//public class DefaultSchedule
+//{
+//    public Group[]? Groups { get; set; }
+//}
 
-public class FoxBatteryControlSettings
-{
-    public string? ApiKey { get; set; }
-    public string? DeviceSN { get; set; }
-    public string? OffPeakFlagEntityID { get; set; }
-    public DefaultSchedule? DefaultSchedule { get; set; }
-}
+//public class FoxBatteryControlSettings
+//{
+//    public string? ApiKey { get; set; }
+//    public string? DeviceSN { get; set; }
+//    public string? OffPeakFlagEntityID { get; set; }
+//    public DefaultSchedule? DefaultSchedule { get; set; }
+//}
