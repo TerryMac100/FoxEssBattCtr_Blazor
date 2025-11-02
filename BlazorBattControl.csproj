@@ -42,12 +42,6 @@
     <None Update="Dockerfile">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="NetDaemon\FoxBatteryControlSettings-sample.yaml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="NetDaemon\FoxBatteryControlSettings.yaml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="README.md">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -55,6 +49,7 @@
 
   <ItemGroup>
     <Folder Include="Migrations\" />
+    <Folder Include="NetDaemon\" />
   </ItemGroup>
 
 </Project>

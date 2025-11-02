@@ -1,5 +1,4 @@
-﻿using BlazorBattControl.NetDaemon;
-using NetDaemon.AppModel;
+﻿//using NetDaemon.AppModel;
 using NetDaemon.HassModel;
 using NetDaemon.HassModel.Entities;
 using NetDaemonMain.apps.FoxEss.FoxApiClient.Models;
@@ -276,6 +275,10 @@ public class FoxEssMain
             backupActive = false;
             feedActive = false;
             dischargeActive = false;
+            
+            // Always reset to the selected schedule at midnight
+            if (seg == 0)
+                SetSchedule(GetScheduleFromModes(modes));
         }
 
         m_lastSegment = seg;    // Don't need this again so set it to current segment

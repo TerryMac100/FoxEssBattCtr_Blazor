@@ -1,9 +1,6 @@
 ﻿using BlazorBattControl.FoxEss.FoxApiClient;
-using BlazorBattControl.NetDaemon;
 using NetDaemon.AppModel;
 using NetDaemon.Extensions.Scheduler;
-using NetDaemon.HassModel;
-using NetDaemon.HassModel.Entities;
 using NetDaemonMain.apps.FoxEss.FoxApiClient.Models;
 using static BlazorBattControl.FoxEss.FoxApiClient.FoxEssMain;
 
@@ -15,23 +12,19 @@ namespace BlazorBattControl.FoxEss;
 [NetDaemonApp]
 public class FoxBatteryControl
 {
-    private readonly IHaContext m_ha;
     private readonly FoxEssMain m_foxEssMain;
     private readonly FoxSettings m_settings;
     private readonly ILogger<FoxBatteryControl> m_logger;
-    //private readonly IAppConfig<FoxBatteryControlSettings> m_foxBatteryControlSettings;
 
-    public FoxBatteryControl(IHaContext ha,
+    public FoxBatteryControl(
         INetDaemonScheduler scheduler,
         FoxEssMain foxEssMain,
         FoxSettings foxSettings,
-        //IAppConfig<FoxBatteryControlSettings> foxBatteryControlSettings,
         ILogger<FoxBatteryControl> logger)
     {
-        m_ha = ha;
+        //m_ha = ha;
         m_foxEssMain = foxEssMain;
         m_settings = foxSettings;
-        //m_foxBatteryControlSettings = foxBatteryControlSettings;
         m_logger = logger;
 
         InitialiseMonitor();

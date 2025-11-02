@@ -28,20 +28,7 @@ else
 {
     <div class="row input-full-width">
         <div class="col-md-4 input-full-width">
-            <EditForm method="post" Model="m_foxSettings" OnValidSubmit="UpdateDbSettings" FormName="edit" Enhance>
-                
-                <div class="mb-3">
-                    <label for="name" class="form-label">Device Serial Number:</label>
-                    <InputText id="DeviceSN" @bind-Value="m_foxSettings.DeviceSN" class="form-control" />
-                    <ValidationMessage For="() => m_foxSettings.ApiKey" class="text-danger" />
-                </div>
-                
-                
-                <div class="mb-3">
-                    <label for="description" class="form-label">FoxESS Api Key:</label>
-                    <InputText id="ApiKey" @bind-Value="m_foxSettings.ApiKey" class="form-control" />
-                    <ValidationMessage For="() => m_foxSettings.ApiKey" class="text-danger" />
-                </div>
+            <EditForm method="post" Model="m_foxSettings" OnValidSubmit="UpdateDbSettings" FormName="edit" Enhance>               
                 <div class="mb-3">
                     <label for="description" class="form-label">HA Battery Charge Flag ID:</label>
                     <InputText id="OffPeakFlagEntityID" @bind-Value="m_foxSettings.OffPeakFlagEntityID" class="form-control" />

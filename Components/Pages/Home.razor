@@ -71,15 +71,19 @@
             }
             else
             {
+                // Select the selected selected schedule 
                 <option value="@schedule.Id" selected>@schedule.Name</option>
             }
         }
 
     </select>
-    <button class="btn btn-primary b-margin" padding=20 hidden="@editActive" @onclick="SendSchedule">Send</button>
+    <div>
+        <button class="btn btn-primary b-margin" padding=20 hidden="@editActive" @onclick="SendSchedule">Send</button>
+        <label hidden="@editActive"  style="float: right;">@m_foxSettings.StatusMessage</label>
+    </div>
+
     <button class="btn btn-primary save-cancel" padding=20 hidden="@editShow" @onclick="SaveChanges">Save</button>
     <button class="btn btn-primary save-cancel" padding=20 hidden="@editShow" @onclick="CancelChanges" style="float: right;">Cancel</button>
-    <label hidden="@editActive" style="float: right; vertical-align: central">@m_foxSettings.StatusMessage</label>
 </div>
 
 <table>
