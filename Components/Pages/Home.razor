@@ -65,8 +65,21 @@
     <select class="form-control"  style="width: 280px" value="@selected" @onchange="SetSelected">
         @foreach (var schedule in m_foxSettings.AllSchedules.OrderBy(m => m.Id))
         {
-            <option selected value="@schedule.Id">@schedule.Name</option>
+            if (schedule.Id != selected)
+            {
+                <option selected value="@schedule.Id">@schedule.Name</option>
+            }
+
         }
+        @{
+            var sch = m_foxSettings.AllSchedules.FirstOrDefault(s => s.Id == selected);
+            if (sch != null)
+            {
+                <option selected value="@sch.Id">@sch.Name</option>
+            }
+        }
+
+
     </select>
     <button class="btn btn-primary b-margin" padding=20 hidden="@editActive" @onclick="SendSchedule">Send</button>
     <button class="btn btn-primary save-cancel" padding=20 hidden="@editShow" @onclick="SaveChanges">Save</button>
