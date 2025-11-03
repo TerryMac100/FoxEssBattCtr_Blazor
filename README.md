@@ -21,9 +21,5 @@ To build and deploy the application, follow these steps:
 2. **Create an appsettings.json** file in the root directory of the project from the sample json file and set the following items:
 	- HomeAssistant Host I/P address
 	- HomeAssistant Long-Lived Access Token
-
-3. **Create a FoxBatteryControlSettings.yaml** file from the sample yaml file and set the following items:
 	- FoxESS ApiKey - Get this from your FoxESS Web login under User Profile -> API Key 
 	- FoxESS DeviceSN - Get this from your FoxESS Web login under Device -> Inverters 
-	- OffPeakFlagEntityID - Set this to the Home Assistant entity ID that indicates off-peak status (e.g., a binary sensor or input boolean) 
-	- DefaultSchedule - Set this to your preferred default charging schedule, the supplied schedule is created for Octopus Intelligent Go

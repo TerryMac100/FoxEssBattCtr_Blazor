@@ -101,7 +101,7 @@ public class FoxSettings : INotifyPropertyChanged
     }
 
     private AppDbSettings? m_appDSsettings;
-    private AppDbSettings settings
+    public AppDbSettings settings
     {
         get
         {
@@ -114,7 +114,6 @@ public class FoxSettings : INotifyPropertyChanged
                 {
                     m_appDSsettings = new AppDbSettings();
                     context.AppDbSettings.Add(m_appDSsettings);
-                    //context.Update(m_appDSsettings);
                     context.SaveChanges();
                 }
             }
@@ -123,7 +122,7 @@ public class FoxSettings : INotifyPropertyChanged
         }
     }
 
-
+    // The user selected Schedule is here as this is the only singleton
     public int selectorId;
 
     public void SaveSelector()

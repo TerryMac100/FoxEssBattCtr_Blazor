@@ -23,4 +23,16 @@ public class AppDbSettings
     public string DischargeFlagEntityID { get; set; } = string.Empty;
 
     public bool UseOffPeakFlag { get; set; }
+
+    public AppDbSettings Clone() 
+    {
+        return new AppDbSettings()
+        {
+            Id = Id,
+            BackupFlagEntityID = BackupFlagEntityID,
+            DischargeFlagEntityID = DischargeFlagEntityID,
+            OffPeakFlagEntityID = OffPeakFlagEntityID,
+            FeedInPriorityFlagEntityID = FeedInPriorityFlagEntityID
+        };
+    }
 }

@@ -13,5 +13,11 @@ namespace BlazorBattControl.Models
         public int MinSoc { get; set; } = 20;
         public int MinDischargeSoc { get; set; } = 40;  
         public int DischargePower { get; set; } = 3600; // in Watts
+
+
+        public Schedule Clone()
+        {
+            return new Schedule { Id = Id, Name = Name, Description = Description, MinSoc = MinSoc, DischargePower = DischargePower };
+        }
     }
 }

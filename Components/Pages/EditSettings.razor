@@ -12,6 +12,18 @@
     .input-full-width{
         width: 100%;
     }
+
+    .save-cancel {
+        margin: 4px 0px;
+        width: 80px;
+    }
+
+    .save-cancel-right {
+        margin: 4px 0px;
+        width: 80px;
+        float: right;
+    }
+
 </style>
 
 
@@ -53,24 +65,37 @@ else
                     <ValidationMessage For="() => m_foxSettings.DischargeFlagEntityID" class="text-danger" />
                 </div>
 
-                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="submit" class="btn btn-primary save-cancel">Save</button>
+                <button class="btn btn-primary save-cancel-right"  @onclick="Cancel">Cancel</button>
             </EditForm>
         </div>
     </div>
 }
 
-<div>
-    <a href="/">Cancel</a>
-</div>
-
 @code {
     private FoxSettings? FoxSettings { get; set; }
 
+    private static AppDbSettings? settingsBackup;
 
-    // protected override async Task OnInitializedAsync()
-    // {
-    //     FoxSettings = m_foxSettings;
-    // }
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+
+        if (firstRender)
+            if (m_foxSettings != null)
+                settingsBackup = m_foxSettings.settings.Clone();
+    }
+
+    private void Cancel()
+    {
+        if (m_foxSettings != null && settingsBackup != null)
+        {
+            m_foxSettings.settings.OffPeakFlagEntityID = settingsBackup.OffPeakFlagEntityID;
+            m_foxSettings.settings.BackupFlagEntityID = settingsBackup.BackupFlagEntityID;
+            m_foxSettings.settings.FeedInPriorityFlagEntityID = settingsBackup.FeedInPriorityFlagEntityID;
+            m_foxSettings.settings.DischargeFlagEntityID = settingsBackup.DischargeFlagEntityID;
+        }
+    }
 
     // To protect from overposting attacks, enable the specific properties you want to bind to.
     // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.

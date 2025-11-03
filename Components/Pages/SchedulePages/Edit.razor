@@ -3,12 +3,19 @@
 @using BlazorBattControl.Models
 @inject IDbContextFactory<BlazorBattControl.Data.BlazorBattControlContext> DbFactory
 @inject NavigationManager NavigationManager
+@rendermode InteractiveServer
 
-<PageTitle>Edit</PageTitle>
+<style>
+    .save-cancel {
+        margin: 4px 0px;
+        width: 80px;
+    }
+</style>
 
-<h1>Edit</h1>
+<PageTitle>Edit Schedule</PageTitle>
 
-<h2>Schedule</h2>
+<h1>Edit Schedule</h1>
+
 <hr />
 @if (Schedule is null)
 {
@@ -47,15 +54,12 @@ else
                     <InputNumber id="dischargepower" @bind-Value="Schedule.DischargePower" class="form-control" min="0" max="8000" />
                     <ValidationMessage For="() => Schedule.DischargePower" class="text-danger" />
                 </div>
-                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="submit" class="btn btn-primary save-cancel">Save</button>
+                <button class="btn btn-primary save-cancel" style="float: right;" @onclick="CancelAsync">Cancel</button>
             </EditForm>
         </div>
     </div>
 }
-
-<div>
-    <a href="/schedules">Back to List</a>
-</div>
 
 @code {
     [SupplyParameterFromQuery]
@@ -72,6 +76,35 @@ else
         if (Schedule is null)
         {
             NavigationManager.NavigateTo("notfound");
+        }       
+    }
+
+    private static Schedule? m_schedule; // { get; set; }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+        
+        if (firstRender)
+            if (Schedule != null)
+                m_schedule = Schedule.Clone();
+
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    private void CancelAsync()
+    {
+        if (Schedule != null && m_schedule != null)
+        {
+            Schedule.Name = m_schedule.Name;
+            Schedule.MinSoc = m_schedule.MinSoc;
+            Schedule.MinDischargeSoc = m_schedule.MinDischargeSoc;
+            Schedule.DischargePower = m_schedule.DischargePower;
+            Schedule.Description = m_schedule.Description;         
         }
     }
 
@@ -80,7 +113,7 @@ else
     private async Task UpdateSchedule()
     {
         using var context = DbFactory.CreateDbContext();
-        context.Attach(Schedule!).State = EntityState.Modified;
+        context.Attach(m_schedule!).State = EntityState.Modified;
 
         try
         {
