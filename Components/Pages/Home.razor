@@ -59,10 +59,36 @@
     .t-centre{
         text-align: center;
     }
+
+    .scrollWrapper {
+        height:600px;
+        overflow:scroll;
+    }
+
+    .tableFixHead {
+        overflow: auto;
+        height: 450px;
+    }
+
+    .tableFixHead thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    table {
+        border-collapse: collapse;
+        
+    }
+
+    th {
+        background: #eee;
+    }
+
 </style>
 
 <div style="max-width: 280px;">
-    <select class="form-control"  style="width: 280px" value="@selected" @onchange="SetSelected">
+    <select class="form-control" style="width: 280px" value="@selected" @onchange="SetSelected">
         @foreach (var schedule in m_foxSettings.AllSchedules.OrderBy(m => m.Id))
         {
             if (schedule.Id != selected)
@@ -71,60 +97,59 @@
             }
             else
             {
-                // Select the selected selected schedule 
+                // Select the selected selected schedule
                 <option value="@schedule.Id" selected>@schedule.Name</option>
             }
         }
-
     </select>
     <div>
         <button class="btn btn-primary b-margin" padding=20 hidden="@editActive" @onclick="SendSchedule">Send</button>
-        <label hidden="@editActive"  style="float: right;">@m_foxSettings.StatusMessage</label>
+        <label hidden="@editActive" style="float: right;">@m_foxSettings.StatusMessage</label>
     </div>
 
     <button class="btn btn-primary save-cancel" padding=20 hidden="@editShow" @onclick="SaveChanges">Save</button>
     <button class="btn btn-primary save-cancel" padding=20 hidden="@editShow" @onclick="CancelChanges" style="float: right;">Cancel</button>
+    <table class="tableFixHead">
+        <thead>
+            <tr>
+                <th class="h-text" width="70">Period</th>
+                <th class="h-text">Charge</th>
+                <th class="h-text">Backup</th>
+                <th class="h-text">SelfUse</th>
+                <th class="h-text">Feed-In</th>
+                <th class="h-text">Dis-Chg</th>
+            </tr>
+        </thead>
+
+        <tbody >
+                @for (int row = 0; row < 48; row++)
+                {
+                    TimeOnly s_time = new TimeOnly(row / 2, (row % 2) * 30);
+                    TimeOnly e_time = new TimeOnly(row / 2, (row % 2) * 30);
+                    e_time = e_time.AddMinutes(29);
+                    <tr>
+                        <td class="t-centre">
+                            <label class="h-text">@s_time - @e_time</label>
+                        </td>
+                        @for (int x = 0; x < 5; x++)
+                        {
+                            int local_row = row;
+                            int _x = x;
+
+                            <td>
+                                <label class="tool_tip_radio_button" data-toggle="tooltip" data-placement="bottom" title="@buttionNames[x]">
+                                    <input type="radio" class="radio_base radio_1"
+                                           checked="@buttonStates[_x, local_row]"
+                                           name=@row onchange="@(() => OnCheckChange(local_row, _x))" />
+                                </label>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+    </table>
 </div>
 
-<table>
-    <thead>
-        <tr>
-            <th class="h-text" width="70">Period</th>
-            <th class="h-text">Charge</th>
-            <th class="h-text">Backup</th>
-            <th class="h-text">SelfUse</th>
-            <th class="h-text">Feed-In</th>
-            <th class="h-text">Dis-Chg</th>
-        </tr>
-    </thead>
-    <tbody>
-        @for (int row = 0; row < 48; row++)
-        {
-            TimeOnly s_time = new TimeOnly(row / 2, (row % 2) * 30);
-            TimeOnly e_time = new TimeOnly(row / 2, (row % 2) * 30);
-            e_time = e_time.AddMinutes(29);
-            <tr>
-                <td class="t-centre">
-                    <label class="h-text">@s_time - @e_time</label>
-                </td>
-                @for (int x = 0; x < 5; x++)
-                {
-                    int local_row = row;
-                    int _x = x;
-
-                    <td>
-                        <label class="tool_tip_radio_button" data-toggle="tooltip" data-placement="bottom" title="@buttionNames[x]">
-                            <input type="radio" class="radio_base radio_1"
-                                   checked="@buttonStates[_x, local_row]"
-                                   name=@row onchange="@(() => OnCheckChange(local_row, _x))" />
-                        </label>
-                    </td>
-                }
-            </tr>
-        }
-    </tbody>
-</table>
-                  
 @code
 {
     private bool m_editActive;
