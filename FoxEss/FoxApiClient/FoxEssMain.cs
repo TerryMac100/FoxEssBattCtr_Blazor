@@ -1,9 +1,7 @@
-﻿//using NetDaemon.AppModel;
-using NetDaemon.HassModel;
+﻿using NetDaemon.HassModel;
 using NetDaemon.HassModel.Entities;
 using NetDaemonMain.apps.FoxEss.FoxApiClient.Models;
 using Newtonsoft.Json;
-using NuGet.Configuration;
 using RestSharp;
 using System.Security.Cryptography;
 using System.Text;
@@ -20,7 +18,6 @@ public class FoxEssMain
     public FoxEssMain(
         IHaContext ha,
         FoxSettings settings,
-        //IAppConfig<FoxBatteryControlSettings> foxBatteryControlSettings,
         IConfiguration config,
         ILogger<FoxEssMain> logger)
     {
@@ -83,6 +80,13 @@ public class FoxEssMain
         await SetScheduleAsync(schedule);
     }
 
+    public SetSchedule GetSelectedSchedule()
+    {
+        int[] modes = GetModes();
+
+        return GetScheduleFromModes(modes);
+    }
+
     private int[] GetModes()        
     {
         int[] modes = new int[48];
@@ -94,13 +98,6 @@ public class FoxEssMain
         }
 
         return modes;
-    }
-
-    public SetSchedule GetSelectedSchedule()
-    {
-        int[] modes = GetModes();
-
-        return GetScheduleFromModes(modes);
     }
 
     private SetSchedule GetScheduleFromModes(int[] modes)
@@ -119,8 +116,6 @@ public class FoxEssMain
             int mode = modes[i];
             var segment = new SetTimeSegment(i, mode, m_settings.MinSoc, m_settings.MinDischargeSoc, m_settings.DischargePower);
 
-            schedule.Groups.Add(segment);
-
             while (i < modes.Length - 1 && modes[i + 1] == mode)
                 i++;
 
@@ -129,11 +124,19 @@ public class FoxEssMain
                 segment.EndMinute = 59;
             else
                 segment.EndMinute = 29;
+
+            // The default if nothing is defined is mode 2 "SelfUse"
+            if (mode != 2)
+            {
+                schedule.Groups.Add(segment);
+            }
+
             i++;
         }
 
         return schedule;
     }
+
 
     public async Task<GetTimeSegmentResponse?> GetSchedule()
     {
@@ -161,14 +164,31 @@ public class FoxEssMain
         }
     }
 
-    private string m_callsEnabled => m_ha.Entity("input_boolean.dev_netdaemon_fox_ess_backup_active").State;
+    private void SetSchedule(SetSchedule schedule)
+    {
+        var task = Task.Run(async () => await SetScheduleAsync(schedule));
+    }
+
+    // Any class decorated with the [NetDaemonApp] attribute will automatically generate a flag in Home Assistant if connected
+    // with the following format BlazorBattControl (the project name) + BlazorBattControl.FoxEss (the name space) +
+    // FoxBatteryControl (the class name) where camel case are converted to low case and separated by _ character
+    // So the battery control background class the following boolean flag is created
+    // 'input_boolean.netdaemon_fox_batt_control_api_enable' for release build and 
+    // 'input_boolean.dev_netdaemon_fox_batt_control_api_enable' for the debug build
+    // Setting the flag to false disables battery control background loop so we use the same flag to disable calls to
+#if DEBUG
+    // The name of the enable flag is presided by "dev_" in the debug build
+    private bool apiCallEnabled => m_ha.Entity("input_boolean.dev_netdaemon_fox_batt_control_api_enable").State == "on";
+#else
+    private bool apiCallEnabled => m_ha.Entity("input_boolean.netdaemon_fox_batt_control_api_enable").State == "on";
+#endif
 
     public async Task SetScheduleAsync(SetSchedule setSchedule)
     {
         m_settings.StatusMessage = "Sending";
 
         // Disable the calls in debug builds (but keep the code in place for testing)
-        bool m_debugBuild = true;
+        bool m_debugBuild = false;
 #if DEBUG
         m_debugBuild = true;
 #endif
@@ -176,7 +196,7 @@ public class FoxEssMain
         var info = $"Sending Schedule\n{st}";
         m_logger.LogInformation(info);
 
-        if (m_callsEnabled == "off" || m_debugBuild)
+        if (apiCallEnabled == false || m_debugBuild == true)
         {
             // Simulate sending delay
             await Task.Run(() =>
@@ -187,7 +207,7 @@ public class FoxEssMain
             if (m_debugBuild)
                 m_logger.LogInformation($"API Call disabled in debug build");
             else
-                m_logger.LogInformation($"API Call disabled");
+                m_logger.LogInformation($"API Call disabled in Home Assistant by API Enable flag");
 
             // Update Schedule Id
             m_settings.LastScheduleId = m_settings.SelectedScheduleId;
@@ -212,14 +232,20 @@ public class FoxEssMain
                 if (ret != null)
                 {
                     if (ret.Errno == 0)
-                        m_logger.LogInformation($"Schedule sent OK");
+                    {
+                        m_logger.LogInformation("Schedule sent OK");
+                        m_settings.StatusMessage = "Schedule sent OK";
+                    }
                     else
                     {
                         m_logger.LogWarning($"Schedule failed to send error number {ret.Errno} with message '{ret.Msg}'");
+                        m_settings.StatusMessage = $"Sending Error No. {ret.Errno}";
                     }
                 }
                 else
+                {
                     m_logger.LogWarning($"Something went wrong return value null");
+                }
 
                 // Update Schedule Id
                 m_settings.LastScheduleId = m_settings.SelectedScheduleId;
@@ -334,11 +360,6 @@ public class FoxEssMain
     }
 
     int m_lastSegment = -1;
-
-    private void SetSchedule(SetSchedule schedule)
-    {
-        var task = Task.Run(async () => await SetScheduleAsync(schedule));
-    }
 
     public enum MonitorSchedule
     {
