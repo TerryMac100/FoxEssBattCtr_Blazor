@@ -3,6 +3,7 @@ using BlazorBattControl.FoxEss.FoxApiClient;
 using BlazorBattControl.Models;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
+using static BlazorBattControl.FoxEss.FoxApiClient.FoxEssMain;
 
 namespace NetDaemonMain.apps.FoxEss.FoxApiClient.Models;
 
@@ -22,7 +23,7 @@ public class FoxSettings : INotifyPropertyChanged
     /// <summary>
     /// Used to see if selected schedule has changed
     /// </summary>
-    public int LastScheduleId { get; set; }
+    //public int LastScheduleId { get; set; }
 
     public BatteryMode? GetMode(int index)
     {
@@ -40,22 +41,22 @@ public class FoxSettings : INotifyPropertyChanged
         return mode;
     }
 
-    public int GetModeValue(int index)
+    public MonitorSchedule GetModeValue(int index)
     {
         var mode = GetMode(index);
         if (mode is null)
-            return 2;
+            return MonitorSchedule.SelfUsePeriod;
 
         return GetModeValue(index, Schedule.Id);
     }
 
-    public int GetModeValue(int index, int scheduleId)
+    public MonitorSchedule GetModeValue(int index, int scheduleId)
     {
         var mode = GetMode(index, scheduleId);
         if (mode is null)
-            return 2;
+            return MonitorSchedule.SelfUsePeriod;
 
-        return mode.BattMode;
+        return (MonitorSchedule)mode.BattMode;
     }
 
     public void SetMode(int index, int modeValue, int scheduleId)

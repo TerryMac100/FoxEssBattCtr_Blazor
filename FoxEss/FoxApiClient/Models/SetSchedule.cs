@@ -1,7 +1,5 @@
-﻿using BlazorBattControl.Models;
-//using BlazorBattControl.NetDaemon;
-using NetDaemon.AppModel;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
+using static BlazorBattControl.FoxEss.FoxApiClient.FoxEssMain;
 
 namespace NetDaemonMain.apps.FoxEss.FoxApiClient.Models;
 
@@ -33,7 +31,7 @@ public class SetTimeSegment : GetTimeSegment
     /// <param name="minSoc">Minimum Stat of Charge</param>
     /// <param name="fdMinSoc">Force Discharge Minimum Stat of Charge</param>
     /// <param name="dcPower">Discharge Power</param>
-    public SetTimeSegment(int startSlot, int mode, int minSoc, int fdMinSoc, int dcPower)
+    public SetTimeSegment(int startSlot, MonitorSchedule mode, int minSoc, int fdMinSoc, int dcPower)
     {
         StartHour = startSlot >> 1;
         if ((startSlot % 2) == 1)
@@ -45,19 +43,19 @@ public class SetTimeSegment : GetTimeSegment
 
         switch (mode)
         {
-            case 0: // SelfUse
+            case MonitorSchedule.ChargePeriod: // SelfUse
                 WorkMode = "ForceCharge";
                 break;
 
-            case 1: // Backup
+            case MonitorSchedule.BackupPeriod: // Backup
                 WorkMode = "Backup";
                 break;
 
-            case 3:
+            case MonitorSchedule.FeedInPeriod:
                 WorkMode = "Feedin";        // Note: "FeedIn" changed to "Feedin" to match expected API value
                 break;
             
-            case 4:
+            case MonitorSchedule.DischargePeriod:
                 WorkMode = "ForceDischarge";
                 break;
             
@@ -82,17 +80,5 @@ public class SetTimeSegment : GetTimeSegment
             EndMinute = 59;
     }
 
-    //public SetTimeSegment(Group group)
-    //{
-    //    WorkMode = group.WorkMode;
-    //    Enable = group.Enabled;
-    //    MinSocOnGrid = group.MinSocOnGrid;
-    //    StartHour = group.StartHour;
-    //    StartMinute = group.StartMinute;
-    //    EndHour = group.EndHour;
-    //    EndMinute = group.EndMinute;
-    //    FdSoc = group.FdSoc;
-    //    FdPwr = group.FdPwr;
-    //}
     public int Enable { get; set; } = 1;
 }

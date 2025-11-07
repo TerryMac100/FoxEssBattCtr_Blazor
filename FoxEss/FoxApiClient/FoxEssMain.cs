@@ -82,14 +82,14 @@ public class FoxEssMain
 
     public SetSchedule GetSelectedSchedule()
     {
-        int[] modes = GetModes();
+        MonitorSchedule[] modes = GetModes();
 
         return GetScheduleFromModes(modes);
     }
 
-    private int[] GetModes()        
+    private MonitorSchedule[] GetModes()        
     {
-        int[] modes = new int[48];
+        MonitorSchedule[] modes = new MonitorSchedule[48];
 
         // Populate the array of modes setting undefined modes to 2 (SelfUse)
         for (int index = 0; index < 48; index++)
@@ -100,7 +100,7 @@ public class FoxEssMain
         return modes;
     }
 
-    private SetSchedule GetScheduleFromModes(int[] modes)
+    private SetSchedule GetScheduleFromModes(MonitorSchedule[] modes)
     {
         m_logger.LogInformation($"Getting ScheduleId {m_settings.SelectedScheduleId}");
 
@@ -113,7 +113,7 @@ public class FoxEssMain
         int i = 0;
         while (i < modes.Length)
         {
-            int mode = modes[i];
+            MonitorSchedule mode = modes[i];
             var segment = new SetTimeSegment(i, mode, m_settings.MinSoc, m_settings.MinDischargeSoc, m_settings.DischargePower);
 
             while (i < modes.Length - 1 && modes[i + 1] == mode)
@@ -126,7 +126,7 @@ public class FoxEssMain
                 segment.EndMinute = 29;
 
             // The default if nothing is defined is mode 2 "SelfUse"
-            if (mode != 2)
+            if (mode != MonitorSchedule.SelfUsePeriod)
             {
                 schedule.Groups.Add(segment);
             }
@@ -209,10 +209,7 @@ public class FoxEssMain
             else
                 m_logger.LogInformation($"API Call disabled in Home Assistant by API Enable flag");
 
-            // Update Schedule Id
-            m_settings.LastScheduleId = m_settings.SelectedScheduleId;
-
-            m_settings.StatusMessage = "OK";
+            m_settings.StatusMessage = "Debug OK";
             return;
         }
 
@@ -221,39 +218,54 @@ public class FoxEssMain
             var request = GetHeader("/op/v0/device/scheduler/enable", RestSharp.Method.Post);
             request.AddBody(setSchedule);
 
-            var client = new RestClient();
-
-            RestResponse response = await client.ExecuteAsync(request);
-
-            if (response.IsSuccessful && response.Content != null)
+            int retry = 1;
+            while (retry++ < retryRequest)
             {
-                SetScheduleResponse? ret = JsonConvert.DeserializeObject<SetScheduleResponse>(response.Content);
+                var client = new RestClient();
+                var response = await client.ExecuteAsync(request);
 
-                if (ret != null)
+                if (response.IsSuccessful && response.Content != null)
                 {
-                    if (ret.Errno == 0)
+                    SetScheduleResponse? ret = JsonConvert.DeserializeObject<SetScheduleResponse>(response.Content);
+
+                    if (ret != null)
                     {
-                        m_logger.LogInformation("Schedule sent OK");
-                        m_settings.StatusMessage = "Schedule sent OK";
+                        if (ret.Errno == 0)
+                        {
+                            m_logger.LogInformation("Schedule sent OK");
+                            m_settings.StatusMessage = "Schedule sent OK";
+                            return;
+                        }
+                        else
+                        {
+                            m_logger.LogWarning($"Schedule failed to send error number {ret.Errno} with message '{ret.Msg}'");
+                            m_settings.StatusMessage = $"Sending Error No. {ret.Errno}";
+                        }
                     }
                     else
                     {
-                        m_logger.LogWarning($"Schedule failed to send error number {ret.Errno} with message '{ret.Msg}'");
-                        m_settings.StatusMessage = $"Sending Error No. {ret.Errno}";
+                        m_settings.StatusMessage = "Sending Error";
+                        m_logger.LogWarning($"Send Error, return value null");
                     }
+                }
+
+                if (response.IsSuccessful)
+                {
+                    m_settings.StatusMessage = "Sending Error";
+                    m_logger.LogWarning($"Send Error, response content null");
                 }
                 else
                 {
-                    m_logger.LogWarning($"Something went wrong return value null");
+                    m_settings.StatusMessage = "Sending Error";
+                    m_logger.LogWarning($"Send Error, response fail");
                 }
 
-                // Update Schedule Id
-                m_settings.LastScheduleId = m_settings.SelectedScheduleId;
-                return;
+                m_logger.LogInformation($"Re-send Schedule Re-try {retry}");        
             }
         }
         catch (Exception ex)
         {
+            m_settings.StatusMessage = "Sending Error";
             m_logger.LogWarning($"Exception while sending schedule, message '{ex.Message}'");
         }
     }
@@ -274,11 +286,11 @@ public class FoxEssMain
         return seg;
     }
 
-    private MonitorSchedule SendModes(int[] modes, int seg, MonitorSchedule state)
+    private MonitorSchedule SendModes(MonitorSchedule[] modes, int seg, MonitorSchedule state)
     {
-        if (modes[seg] != (int)state)
+        if (modes[seg] != state)
         {
-            modes[seg] = (int)state;
+            modes[seg] = state;
             SetSchedule(GetScheduleFromModes(modes));
         }
         return state;
@@ -360,6 +372,8 @@ public class FoxEssMain
     }
 
     int m_lastSegment = -1;
+
+    private const int retryRequest = 3;
 
     public enum MonitorSchedule
     {
