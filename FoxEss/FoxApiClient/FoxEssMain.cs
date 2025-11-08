@@ -285,15 +285,26 @@ public class FoxEssMain
         return seg;
     }
 
-    private MonitorSchedule SendModes(MonitorSchedule[] modes, int seg, MonitorSchedule state)
+    private bool SendModes(MonitorSchedule[] modes, int seg, MonitorSchedule flagState)
     {
-        // Only set the send the schedule if it is not equal to the supplied state
-        if (modes[seg] != state)
+        switch (modes[seg])
         {
-            modes[seg] = state;
-            SetSchedule(GetScheduleFromModes(modes));
+            // If the schedule requires a charge or discharge don't do a flag override
+            case MonitorSchedule.ChargePeriod:               
+            case MonitorSchedule.DischargePeriod:
+                return false;
+               
+            // If self use, feed in or backup and a flag is asking for something else
+            // Update the schedule to the flag state
+            default:
+                if (modes[seg] != flagState)
+                {
+                    modes[seg] = flagState;
+                    SetSchedule(GetScheduleFromModes(modes));
+                    return true;
+                }
+                return false;
         }
-        return state;
     }
 
     private bool backupActive = false;
@@ -321,17 +332,17 @@ public class FoxEssMain
 
         m_lastSegment = seg;    // Don't need this again so set it to current segment
 
-        // A charging schedule overrides the backup/FeedIn and Discharge flag
-        if (modes[seg] != MonitorSchedule.ChargePeriod)
-            return MonitorSchedule.ChargePeriod;
-
         if (m_foxChargeActive)
             if (chargeActive)
                 return MonitorSchedule.ChargePeriod;        // Charge already set so just return
             else
             {
-                chargeActive = true;
-                return SendModes(modes, seg, MonitorSchedule.ChargePeriod);
+                chargeActive = SendModes(modes, seg, MonitorSchedule.ChargePeriod);
+                if (chargeActive)
+                {
+                    m_settings.StatusMessage = "Charging";
+                    return MonitorSchedule.ChargePeriod;
+                }
             }
 
         if (m_foxBackupActive)
@@ -339,8 +350,12 @@ public class FoxEssMain
                 return MonitorSchedule.BackupPeriod;        // Charge already set so just return
             else
             {
-                backupActive = true;
-                return SendModes(modes, seg, MonitorSchedule.BackupPeriod);
+                backupActive = SendModes(modes, seg, MonitorSchedule.BackupPeriod);
+                if (backupActive)
+                {
+                    m_settings.StatusMessage = "Backup";
+                    return MonitorSchedule.BackupPeriod;
+                }
             }
 
         if (m_foxFeedInActive)
@@ -348,8 +363,12 @@ public class FoxEssMain
                 return MonitorSchedule.FeedInPeriod;        // Charge already set so just return
             else
             {
-                feedActive = true;
-                return SendModes(modes, seg, MonitorSchedule.FeedInPeriod);
+                feedActive = SendModes(modes, seg, MonitorSchedule.FeedInPeriod);
+                if (feedActive)
+                {
+                    m_settings.StatusMessage = "Feed In";
+                    return MonitorSchedule.FeedInPeriod;
+                }
             }
 
         if (m_foxDischargeActive)
@@ -357,8 +376,11 @@ public class FoxEssMain
                 return MonitorSchedule.DischargePeriod;        // Charge already set so just return
             else
             {
-                dischargeActive = true;
-                return SendModes(modes, seg, MonitorSchedule.DischargePeriod);
+                dischargeActive = SendModes(modes, seg, MonitorSchedule.DischargePeriod);
+                if (dischargeActive)
+                {
+                    return MonitorSchedule.DischargePeriod;
+                }
             }
 
         // See if any charge active periods are set that now need clearing
@@ -371,8 +393,31 @@ public class FoxEssMain
             SetSchedule(GetScheduleFromModes(modes));
         }
 
-        return (MonitorSchedule)modes[seg];
+        switch (currentState)
+        {
+            case MonitorSchedule.ChargePeriod:
+                m_settings.StatusMessage = "Charging";
+                break;
+            case MonitorSchedule.BackupPeriod:
+                m_settings.StatusMessage = "Backup";
+                break;
+            case MonitorSchedule.SelfUsePeriod:
+                m_settings.StatusMessage = "Self Use";
+                break;
+            case MonitorSchedule.FeedInPeriod:
+                m_settings.StatusMessage = "Feed In";
+                break;
 
+            case MonitorSchedule.DischargePeriod:
+                m_settings.StatusMessage = "Discharging";
+                break;
+
+            default:
+                m_settings.StatusMessage = "Resetting";
+                break;
+        }
+
+        return modes[seg];
     }
 
     int m_lastSegment = -1;

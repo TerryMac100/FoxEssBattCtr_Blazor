@@ -46,21 +46,7 @@ public class FoxBatteryControl
     {
         m_monitorState = MonitorSchedule.Reset;
         m_logger.LogInformation($"FoxESS Monitor - Starting");
-
-        //_ = Task.Run(() =>
-        //{
-        //    while (monitor == false)
-        //    {
-        //        monitor = true;
-        //        Thread.Sleep(TimeSpan.FromSeconds(m_schedualRateSeconds * 2));
-        //    }
-
-        //    m_logger.LogInformation($"FoxESS Monitor - Stopped");
-        //});
     }
-
-    //private bool monitor = false;
-
 
 #if DEBUG
     // The name of the enable flag is presided by "dev_" in the debug build
@@ -96,7 +82,7 @@ public class FoxBatteryControl
     {
         set
         {
-            if (MonitorState == value)
+            if (m_monitorState == value)
                 return;
 
             m_monitorState = value;
@@ -131,6 +117,9 @@ public class FoxBatteryControl
         }
         get { return m_monitorState; }
     }
-
-    private const int m_schedualRateSeconds = 3;
+#if DEBUG
+    private const int m_schedualRateSeconds = 2;
+#else
+    private const int m_schedualRateSeconds = 8;
+#endif
 }
