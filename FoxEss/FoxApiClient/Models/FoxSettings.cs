@@ -19,35 +19,12 @@ public class FoxSettings : INotifyPropertyChanged
         m_logger = logger;
     }
     
-
-    /// <summary>
-    /// Used to see if selected schedule has changed
-    /// </summary>
-    //public int LastScheduleId { get; set; }
-
-    public BatteryMode? GetMode(int index)
-    {
-        using var dbContext = m_dbFactory.CreateDbContext();
-        var mode = dbContext.Mode.FirstOrDefault(m => m.TimeSlot == index && m.SchedualId == SelectedScheduleId);
-            
-        return mode;
-    }
-
     public BatteryMode? GetMode(int index, int scheduleId)
     {
         using var dbContext = m_dbFactory.CreateDbContext();
         var mode = dbContext.Mode.FirstOrDefault(m => m.TimeSlot == index && m.SchedualId == scheduleId);
 
         return mode;
-    }
-
-    public MonitorSchedule GetModeValue(int index)
-    {
-        var mode = GetMode(index);
-        if (mode is null)
-            return MonitorSchedule.SelfUsePeriod;
-
-        return GetModeValue(index, Schedule.Id);
     }
 
     public MonitorSchedule GetModeValue(int index, int scheduleId)

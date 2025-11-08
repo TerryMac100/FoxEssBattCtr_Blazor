@@ -5,6 +5,7 @@
 @using Microsoft.EntityFrameworkCore
 @using NetDaemonMain.apps.FoxEss.FoxApiClient.Models
 @using System.ComponentModel
+@using static BlazorBattControl.FoxEss.FoxApiClient.FoxEssMain
 
 @inject NavigationManager NavManager
 @inject FoxEssMain m_foxEssMain
@@ -246,7 +247,7 @@
         {
             var mode = m_foxSettings.GetModeValue(row, selected);
             for (int x = 0; x < 5; x++)
-                if (mode == x)
+                if (mode == (MonitorSchedule)x)
                     buttonStates[x, row] = true;
                 else
                     buttonStates[x, row] = false;

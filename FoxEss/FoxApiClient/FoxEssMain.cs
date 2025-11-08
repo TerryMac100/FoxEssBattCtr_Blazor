@@ -137,12 +137,11 @@ public class FoxEssMain
         return schedule;
     }
 
-
-    public async Task<GetTimeSegmentResponse?> GetSchedule()
+    public async Task<GetTimeSegmentResponse?> GetScheduleAsync()
     {
         try
         {
-            var request = GetHeader("/op/v0/device/scheduler/get", RestSharp.Method.Post);
+            var request = GetHeader("/op/v1/device/scheduler/get", RestSharp.Method.Post);
 
             request.AddBody(new DeviceSerialNumber(m_settings));
 
@@ -215,7 +214,7 @@ public class FoxEssMain
 
         try
         {
-            var request = GetHeader("/op/v0/device/scheduler/enable", RestSharp.Method.Post);
+            var request = GetHeader("/op/v1/device/scheduler/enable", RestSharp.Method.Post);
             request.AddBody(setSchedule);
 
             int retry = 1;
@@ -288,6 +287,7 @@ public class FoxEssMain
 
     private MonitorSchedule SendModes(MonitorSchedule[] modes, int seg, MonitorSchedule state)
     {
+        // Only set the send the schedule if it is not equal to the supplied state
         if (modes[seg] != state)
         {
             modes[seg] = state;
@@ -320,6 +320,10 @@ public class FoxEssMain
         }
 
         m_lastSegment = seg;    // Don't need this again so set it to current segment
+
+        // A charging schedule overrides the backup/FeedIn and Discharge flag
+        if (modes[seg] != MonitorSchedule.ChargePeriod)
+            return MonitorSchedule.ChargePeriod;
 
         if (m_foxChargeActive)
             if (chargeActive)
