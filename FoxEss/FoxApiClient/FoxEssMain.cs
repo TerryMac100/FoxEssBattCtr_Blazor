@@ -1,5 +1,4 @@
 ﻿using NetDaemon.HassModel;
-using NetDaemon.HassModel.Entities;
 using NetDaemonMain.apps.FoxEss.FoxApiClient.Models;
 using Newtonsoft.Json;
 using RestSharp;
@@ -73,37 +72,44 @@ public class FoxEssMain
         return request;
     }
 
+
+    /// <summary>
+    /// Gets or sets the collection of the latest schedules as MonitorSchedule array
+    /// </summary>
+    public MonitorSchedule[] LatestModes { get; set; } = new MonitorSchedule[48];
+
+    /// <summary>
+    /// Sends the currently selected schedule to the appropriate destination asynchronously.
+    /// </summary>
+    /// <remarks>This method retrieves the latest modes from the database, generates a schedule based on those
+    /// modes,  and sends the schedule using an asynchronous operation.</remarks>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task SendSelectedScheduleAsync()
     {
-        var schedule = GetSelectedSchedule();
-        
+        LatestModes = GetModesFromDb();
+
+        var schedule = GetScheduleFromModes(LatestModes);
         await SetScheduleAsync(schedule);
     }
 
-    public SetSchedule GetSelectedSchedule()
+    /// <summary>
+    /// Updates the current schedule based on the provided monitor modes.
+    /// </summary>
+    public void SetScheduleFromModes(MonitorSchedule[] modes)
     {
-        MonitorSchedule[] modes = GetModes();
+        LatestModes = modes;
 
-        return GetScheduleFromModes(modes);
+        var schedule = GetScheduleFromModes(modes);
+        SetSchedule(schedule);
     }
 
-    private MonitorSchedule[] GetModes()        
-    {
-        MonitorSchedule[] modes = new MonitorSchedule[48];
-
-        // Populate the array of modes setting undefined modes to 2 (SelfUse)
-        for (int index = 0; index < 48; index++)
-        {
-            modes[index] = m_settings.GetModeValue(index, m_settings.SelectedScheduleId);
-        }
-
-        return modes;
-    }
-
+    /// <summary>
+    /// Creates a SetSchedule object from an array of MonitorSchedule modes.
+    /// </summary>
+    /// <param name="modes">The supplied modes</param>
+    /// <returns>The SetSchedule object</returns>
     private SetSchedule GetScheduleFromModes(MonitorSchedule[] modes)
     {
-        m_logger.LogInformation($"Getting ScheduleId {m_settings.SelectedScheduleId}");
-
         var schedule = new SetSchedule()               
         { 
             Groups = new List<SetTimeSegment>(),
@@ -137,35 +143,33 @@ public class FoxEssMain
         return schedule;
     }
 
-    public async Task<GetTimeSegmentResponse?> GetScheduleAsync()
+    /// <summary>
+    /// Gets the currently selected modes from the database.
+    /// </summary>
+    /// <returns>The schedule as an array of modes</returns>
+    public MonitorSchedule[] GetModesFromDb()        
     {
-        try
+        MonitorSchedule[] modes = new MonitorSchedule[48];
+
+        // Populate the array of modes setting undefined modes to 2 (SelfUse)
+        for (int index = 0; index < 48; index++)
         {
-            var request = GetHeader("/op/v1/device/scheduler/get", RestSharp.Method.Post);
-
-            request.AddBody(new DeviceSerialNumber(m_settings));
-
-            var client = new RestClient();
-
-            RestResponse response = await client.ExecuteAsync(request);
-
-            if (response.IsSuccessful && response.Content != null)
-            {
-                GetTimeSegmentResponse? ret = JsonConvert.DeserializeObject<GetTimeSegmentResponse>(response.Content);
-                return ret;
-            }
-
-            return null;
+            modes[index] = m_settings.GetModeValue(index, m_settings.SelectedScheduleId);
         }
-        catch (Exception ex)
-        {
-            return null;
-        }
+
+        return modes;
     }
 
+
+    /// <summary>
+    /// Schedules a task to update the schedule asynchronously.
+    /// </summary>
+    /// <remarks>This method initiates an asynchronous operation to update the schedule.  The operation runs on a
+    /// separate task and does not block the calling thread.</remarks>
+    /// <param name="schedule">The schedule details to be set.</param>
     private void SetSchedule(SetSchedule schedule)
     {
-        var task = Task.Run(async () => await SetScheduleAsync(schedule));
+        _ = Task.Run(async () => await SetScheduleAsync(schedule).ConfigureAwait(true));
     }
 
     // Any class decorated with the [NetDaemonApp] attribute will automatically generate a flag in Home Assistant if connected
@@ -182,7 +186,7 @@ public class FoxEssMain
     private bool apiCallEnabled => m_ha.Entity("input_boolean.netdaemon_fox_batt_control_api_enable").State == "on";
 #endif
 
-    public async Task SetScheduleAsync(SetSchedule setSchedule)
+    private async Task SetScheduleAsync(SetSchedule setSchedule)
     {
         m_settings.StatusMessage = "Sending";
 
@@ -268,159 +272,6 @@ public class FoxEssMain
             m_logger.LogWarning($"Exception while sending schedule, message '{ex.Message}'");
         }
     }
-
-    private bool m_foxChargeActive => new Entity(m_ha, m_settings.OffPeakFlagEntityID).State == "on";
-    private bool m_foxBackupActive => new Entity(m_ha, m_settings.BackupFlagEntityID).State == "on";
-    private bool m_foxFeedInActive => new Entity(m_ha, m_settings.FeedInPriorityFlagEntityID).State == "on";
-    private bool m_foxDischargeActive => new Entity(m_ha, m_settings.DischargeFlagEntityID).State == "on";
-
-    public int GetSegment()
-    {
-        var dateTime = DateTime.Now;
-
-        var seg = dateTime.Hour * 2;
-        if (dateTime.Minute >= 30)
-            seg += 1;
-
-        return seg;
-    }
-
-    private bool SendModes(MonitorSchedule[] modes, int seg, MonitorSchedule flagState)
-    {
-        switch (modes[seg])
-        {
-            // If the schedule requires a charge or discharge don't do a flag override
-            case MonitorSchedule.ChargePeriod:               
-            case MonitorSchedule.DischargePeriod:
-                return false;
-               
-            // If self use, feed in or backup and a flag is asking for something else
-            // Update the schedule to the flag state
-            default:
-                if (modes[seg] != flagState)
-                {
-                    modes[seg] = flagState;
-                    SetSchedule(GetScheduleFromModes(modes));
-                    return true;
-                }
-                return false;
-        }
-    }
-
-    private bool backupActive = false;
-    private bool chargeActive = false;
-    private bool dischargeActive = false;
-    private bool feedActive = false;
-
-    public MonitorSchedule SendSchedule(MonitorSchedule currentState)
-    {
-        var modes = GetModes();
-        var seg = GetSegment();
-        
-        // Clear any set active flags if segment has changed
-        if (seg != m_lastSegment)
-        {
-            chargeActive = false;
-            backupActive = false;
-            feedActive = false;
-            dischargeActive = false;
-            
-            // Always reset to the selected schedule at midnight
-            if (seg == 0)
-                SetSchedule(GetScheduleFromModes(modes));
-        }
-
-        m_lastSegment = seg;    // Don't need this again so set it to current segment
-
-        if (m_foxChargeActive)
-            if (chargeActive)
-                return MonitorSchedule.ChargePeriod;        // Charge already set so just return
-            else
-            {
-                chargeActive = SendModes(modes, seg, MonitorSchedule.ChargePeriod);
-                if (chargeActive)
-                {
-                    m_settings.StatusMessage = "Charging";
-                    return MonitorSchedule.ChargePeriod;
-                }
-            }
-
-        if (m_foxBackupActive)
-            if (backupActive)
-                return MonitorSchedule.BackupPeriod;        // Charge already set so just return
-            else
-            {
-                backupActive = SendModes(modes, seg, MonitorSchedule.BackupPeriod);
-                if (backupActive)
-                {
-                    m_settings.StatusMessage = "Backup";
-                    return MonitorSchedule.BackupPeriod;
-                }
-            }
-
-        if (m_foxFeedInActive)
-            if (feedActive)
-                return MonitorSchedule.FeedInPeriod;        // Charge already set so just return
-            else
-            {
-                feedActive = SendModes(modes, seg, MonitorSchedule.FeedInPeriod);
-                if (feedActive)
-                {
-                    m_settings.StatusMessage = "Feed In";
-                    return MonitorSchedule.FeedInPeriod;
-                }
-            }
-
-        if (m_foxDischargeActive)
-            if (dischargeActive)
-                return MonitorSchedule.DischargePeriod;        // Charge already set so just return
-            else
-            {
-                dischargeActive = SendModes(modes, seg, MonitorSchedule.DischargePeriod);
-                if (dischargeActive)
-                {
-                    return MonitorSchedule.DischargePeriod;
-                }
-            }
-
-        // See if any charge active periods are set that now need clearing
-        if (chargeActive || backupActive || feedActive || dischargeActive)
-        {
-            chargeActive = false;
-            backupActive = false;
-            feedActive = false;
-            dischargeActive = false;
-            SetSchedule(GetScheduleFromModes(modes));
-        }
-
-        switch (currentState)
-        {
-            case MonitorSchedule.ChargePeriod:
-                m_settings.StatusMessage = "Charging";
-                break;
-            case MonitorSchedule.BackupPeriod:
-                m_settings.StatusMessage = "Backup";
-                break;
-            case MonitorSchedule.SelfUsePeriod:
-                m_settings.StatusMessage = "Self Use";
-                break;
-            case MonitorSchedule.FeedInPeriod:
-                m_settings.StatusMessage = "Feed In";
-                break;
-
-            case MonitorSchedule.DischargePeriod:
-                m_settings.StatusMessage = "Discharging";
-                break;
-
-            default:
-                m_settings.StatusMessage = "Resetting";
-                break;
-        }
-
-        return modes[seg];
-    }
-
-    int m_lastSegment = -1;
 
     private const int retryRequest = 3;
 
