@@ -92,7 +92,7 @@ public class FoxEssMain
         }
         else
         {
-            if (m_settings.RetryBackOff < 8)
+            if (m_settings.RetryBackOff < backOffMax)
                 m_settings.RetryBackOff++;
         }
     }
@@ -112,7 +112,7 @@ public class FoxEssMain
         }
         else
         {
-            if (m_settings.RetryBackOff < 8)
+            if (m_settings.RetryBackOff < backOffMax)
                 m_settings.RetryBackOff++;
         }
     }
@@ -291,7 +291,7 @@ public class FoxEssMain
         }
     }
 
-    private const int retryRequest = 3;
+    private const int backOffMax = 3;
 
     public enum MonitorSchedule
     {

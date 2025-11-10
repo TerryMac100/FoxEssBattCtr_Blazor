@@ -28,6 +28,11 @@ Create a appsettings.json based on the appsettings-sample.json file in the root 
 	- FoxESS ApiKey - Get this from your FoxESS Web login under User Profile -> API Key 
 	- FoxESS DeviceSN - Get this from your FoxESS Web login under Device -> Inverters
 
+A guide to creating a HomeAssistant Long-Lived Access Token can be found at the following link:
+https://community.home-assistant.io/t/how-to-get-long-lived-access-token/162159
+
+To find your FoxESS ApiKey Log in to your account on the Foxess Cloud website (https://www.foxesscloud.com) and navigate to User Profile -> API Key to generate or view your API key.
+
 3. **Build/Run/Debug the application**
 Check that the application connects to the Home Assistant instance, if successful two flags will be created on the Helpers group.
 While running the application in debug calls to the Fox Cloud API will be disabled.
