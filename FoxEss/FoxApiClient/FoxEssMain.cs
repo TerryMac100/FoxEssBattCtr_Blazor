@@ -72,12 +72,6 @@ public class FoxEssMain
         return request;
     }
 
-
-    /// <summary>
-    /// Gets or sets the collection of the latest schedules as MonitorSchedule array
-    /// </summary>
-    public MonitorSchedule[] LatestModes { get; set; } = new MonitorSchedule[48];
-
     /// <summary>
     /// Sends the currently selected schedule to the appropriate destination asynchronously.
     /// </summary>
@@ -86,10 +80,21 @@ public class FoxEssMain
     /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task SendSelectedScheduleAsync()
     {
-        LatestModes = GetModesFromDb();
+        var modes = GetModesFromDb();
 
-        var schedule = GetScheduleFromModes(LatestModes);
-        await SetScheduleAsync(schedule);
+        var schedule = GetScheduleFromModes(modes);
+        var status = await SetScheduleAsync(schedule);
+
+        if (status)
+        {
+            m_settings.LatestModes = modes;
+            m_settings.RetryBackOff = 0;
+        }
+        else
+        {
+            if (m_settings.RetryBackOff < 8)
+                m_settings.RetryBackOff++;
+        }
     }
 
     /// <summary>
@@ -97,10 +102,19 @@ public class FoxEssMain
     /// </summary>
     public void SetScheduleFromModes(MonitorSchedule[] modes)
     {
-        LatestModes = modes;
-
         var schedule = GetScheduleFromModes(modes);
-        SetSchedule(schedule);
+        var status = SetSchedule(schedule);
+
+        if (status)
+        {
+            m_settings.LatestModes = modes;
+            m_settings.RetryBackOff = 0;
+        }
+        else
+        {
+            if (m_settings.RetryBackOff < 8)
+                m_settings.RetryBackOff++;
+        }
     }
 
     /// <summary>
@@ -167,9 +181,16 @@ public class FoxEssMain
     /// <remarks>This method initiates an asynchronous operation to update the schedule.  The operation runs on a
     /// separate task and does not block the calling thread.</remarks>
     /// <param name="schedule">The schedule details to be set.</param>
-    private void SetSchedule(SetSchedule schedule)
+    private bool SetSchedule(SetSchedule schedule)
     {
-        _ = Task.Run(async () => await SetScheduleAsync(schedule).ConfigureAwait(true));
+        Task<bool> t = Task<bool>.Run(async () =>
+        {
+            return await SetScheduleAsync(schedule).ConfigureAwait(true);        
+        });
+
+        t.Wait();
+
+        return t.Result;
     }
 
     // Any class decorated with the [NetDaemonApp] attribute will automatically generate a flag in Home Assistant if connected
@@ -186,7 +207,7 @@ public class FoxEssMain
     private bool apiCallEnabled => m_ha.Entity("input_boolean.netdaemon_fox_batt_control_api_enable").State == "on";
 #endif
 
-    private async Task SetScheduleAsync(SetSchedule setSchedule)
+    private async Task<bool> SetScheduleAsync(SetSchedule setSchedule)
     {
         m_settings.StatusMessage = "Sending";
 
@@ -199,77 +220,74 @@ public class FoxEssMain
         var info = $"Sending Schedule\n{st}";
         m_logger.LogInformation(info);
 
-        if (apiCallEnabled == false || m_debugBuild == true)
-        {
-            // Simulate sending delay
-            await Task.Run(() =>
-            {
-                Thread.Sleep(1000);
-            });
-
-            if (m_debugBuild)
-                m_logger.LogInformation($"API Call disabled in debug build");
-            else
-                m_logger.LogInformation($"API Call disabled in Home Assistant by API Enable flag");
-
-            m_settings.StatusMessage = "Debug OK";
-            return;
-        }
-
         try
         {
+            if (apiCallEnabled == false || m_debugBuild == true)
+            {
+                // Simulate sending delay
+                await Task.Run(() =>
+                {
+                    Thread.Sleep(1000);
+                });
+
+                if (m_debugBuild)
+                    m_logger.LogInformation($"API Call disabled in debug build");
+                else
+                    m_logger.LogInformation($"API Call disabled in Home Assistant by API Enable flag");
+
+                m_settings.StatusMessage = "Debug OK";
+                return true;
+            }
+
             var request = GetHeader("/op/v1/device/scheduler/enable", RestSharp.Method.Post);
             request.AddBody(setSchedule);
 
-            int retry = 1;
-            while (retry++ < retryRequest)
+            var client = new RestClient();
+            var response = await client.ExecuteAsync(request);
+
+            if (response.IsSuccessful && response.Content != null)
             {
-                var client = new RestClient();
-                var response = await client.ExecuteAsync(request);
+                SetScheduleResponse? ret = JsonConvert.DeserializeObject<SetScheduleResponse>(response.Content);
 
-                if (response.IsSuccessful && response.Content != null)
+                if (ret != null)
                 {
-                    SetScheduleResponse? ret = JsonConvert.DeserializeObject<SetScheduleResponse>(response.Content);
-
-                    if (ret != null)
+                    if (ret.Errno == 0)
                     {
-                        if (ret.Errno == 0)
-                        {
-                            m_logger.LogInformation("Schedule sent OK");
-                            m_settings.StatusMessage = "Schedule sent OK";
-                            return;
-                        }
-                        else
-                        {
-                            m_logger.LogWarning($"Schedule failed to send error number {ret.Errno} with message '{ret.Msg}'");
-                            m_settings.StatusMessage = $"Sending Error No. {ret.Errno}";
-                        }
+                        m_logger.LogInformation("Schedule sent OK");
+                        m_settings.StatusMessage = "Schedule sent OK";
+                        return true;
                     }
                     else
                     {
-                        m_settings.StatusMessage = "Sending Error";
-                        m_logger.LogWarning($"Send Error, return value null");
+                        m_logger.LogWarning($"Schedule failed to send error number {ret.Errno} with message '{ret.Msg}'");
+                        m_settings.StatusMessage = $"Sending Error No. {ret.Errno}";
                     }
-                }
-
-                if (response.IsSuccessful)
-                {
-                    m_settings.StatusMessage = "Sending Error";
-                    m_logger.LogWarning($"Send Error, response content null");
                 }
                 else
                 {
                     m_settings.StatusMessage = "Sending Error";
-                    m_logger.LogWarning($"Send Error, response fail");
+                    m_logger.LogWarning($"Send Error, return value null");
                 }
-
-                m_logger.LogInformation($"Re-send Schedule Re-try {retry}");        
             }
+
+            if (response.IsSuccessful)
+            {
+                m_settings.StatusMessage = "Sending Error";
+                m_logger.LogWarning($"Send Error, response content null");
+            }
+            else
+            {
+                m_settings.StatusMessage = "Sending Error";
+                m_logger.LogWarning($"Send Error, response fail");
+            }
+                
+            return false;
         }
         catch (Exception ex)
         {
             m_settings.StatusMessage = "Sending Error";
             m_logger.LogWarning($"Exception while sending schedule, message '{ex.Message}'");
+            return false;
         }
     }
 

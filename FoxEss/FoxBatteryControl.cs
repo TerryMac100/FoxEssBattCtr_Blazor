@@ -39,7 +39,6 @@ public class FoxBatteryControl
         scheduler.RunEvery(TimeSpan.FromSeconds(m_schedualRateSeconds), () =>
         {
             RunMonitor();
-            //monitor = false;
         });
     }
 
@@ -56,11 +55,19 @@ public class FoxBatteryControl
     private string m_callsEnabled => m_ha.Entity("input_boolean.netdaemon_blazor_batt_control_fox_ess_fox_battery_control").State;
 #endif
 
+    private int m_retryDelayCount = 0;
+
     /// <summary>
     /// The main monitor loop runs periodically to check for flag state changes but is delayed when an override is active
     /// </summary>
     private void RunMonitor()
     {
+        if (m_retryDelayCount > 0)
+        {
+            m_retryDelayCount--;
+            return;
+        }
+
         var dateTimeNow = DateTime.Now;
 
         // When an override is active don't check the flag states in the first minute
@@ -71,6 +78,8 @@ public class FoxBatteryControl
         var seg = GetSegment(dateTimeNow);
 
         MonitorState = CheckForScheduleStateChanges(seg);
+
+        m_retryDelayCount = m_settings.RetryBackOff;
     }
 
     public int GetSegment(DateTime dateTime)
@@ -111,9 +120,11 @@ public class FoxBatteryControl
         else if (m_foxDischargeActive)
             modes[segment] = MonitorSchedule.DischargePeriod;
 
-        // Check for a state change
-        if (modes[segment] != m_foxEssMain.LatestModes[segment])
+        // Check for a state change for the current segment
+        if (modes[segment] != m_settings.LatestModes[segment])
         {
+            m_foxEssMain.SetScheduleFromModes(modes);
+
             // If the state change is due to an active flag set the override active flag
             if (m_foxChargeActive || m_foxBackupActive || m_foxFeedInActive || m_foxDischargeActive)
                 m_overrideActive = true;

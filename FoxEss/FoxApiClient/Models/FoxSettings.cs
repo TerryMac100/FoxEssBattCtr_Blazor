@@ -17,6 +17,12 @@ public class FoxSettings : INotifyPropertyChanged
     {
         m_dbFactory = dbFactory;
         m_logger = logger;
+
+        // Initialize LatestModes to default value - self-use period
+        foreach (var index in Enumerable.Range(0, 48))
+        {
+            LatestModes[index] = MonitorSchedule.SelfUsePeriod;
+        }
     }
     
     public BatteryMode? GetMode(int index, int scheduleId)
@@ -233,7 +239,15 @@ public class FoxSettings : INotifyPropertyChanged
     public int MinDischargeSoc => Schedule.MinDischargeSoc;
     public int DischargePower => Schedule.DischargePower;
 
-    private string m_statusMessage;
+    private string m_statusMessage = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the collection of the latest schedules as MonitorSchedule array
+    /// Saved here as this is the only singleton
+    /// </summary>
+    public MonitorSchedule[] LatestModes { get; set; } = new MonitorSchedule[48];
+
+    public int RetryBackOff = 0;
 
     public string StatusMessage
     {
