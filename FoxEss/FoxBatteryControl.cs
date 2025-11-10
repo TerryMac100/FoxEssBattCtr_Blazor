@@ -57,25 +57,20 @@ public class FoxBatteryControl
 #endif
 
     /// <summary>
-    /// When the Cheap rate period starts - send default schedule
-    /// If the backup flag is active - disable discharging of the battery for the current segment
-    /// If the charge flag is active - enable charging of the battery for the current segment
-    /// If if the charge or backup flags change to false - send default schedule
-    /// When a new segment starts - extend the current mode if charge or backup active are still active
+    /// The main monitor loop runs periodically to check for flag state changes but is delayed when an override is active
     /// </summary>
     private void RunMonitor()
     {
         var dateTimeNow = DateTime.Now;
 
-        // Don't make any change in the first minutes of the period
-        // This is to let the two inputs settle
-        if ((dateTimeNow.Minute == 0) ||
-            (dateTimeNow.Minute == 30))
+        // When an override is active don't check the flag states in the first minute
+        // of the half hour to allow for the input flags to stabilize
+        if (m_overrideActive && (dateTimeNow.Minute == 0 || dateTimeNow.Minute == 30))
             return;
 
         var seg = GetSegment(dateTimeNow);
 
-        MonitorState = CheckScheduleState(MonitorState, seg);
+        MonitorState = CheckForScheduleStateChanges(seg);
     }
 
     public int GetSegment(DateTime dateTime)
@@ -87,113 +82,46 @@ public class FoxBatteryControl
         return seg;
     }
 
-    private bool backupActive = false;
-    private bool chargeActive = false;
-    private bool dischargeActive = false;
-    private bool feedActive = false;
     private bool m_foxChargeActive => new Entity(m_ha, m_settings.OffPeakFlagEntityID).State == "on";
     private bool m_foxBackupActive => new Entity(m_ha, m_settings.BackupFlagEntityID).State == "on";
     private bool m_foxFeedInActive => new Entity(m_ha, m_settings.FeedInPriorityFlagEntityID).State == "on";
     private bool m_foxDischargeActive => new Entity(m_ha, m_settings.DischargeFlagEntityID).State == "on";
 
-    public MonitorSchedule CheckScheduleState(MonitorSchedule currentState, int seg)
+    private bool m_overrideActive;
+
+    /// <summary>
+    /// Determines the current schedule state for the specified segment and updates the schedule if a state change is
+    /// detected.
+    /// </summary>
+    /// <remarks>This method evaluates the current state of the system based on active flags and updates the
+    /// schedule if the state for the specified segment has changed. If a state change is detected, the schedule is
+    /// updated, and the override flag is set to <see langword="true"/>; otherwise, the override flag is set to <see
+    /// langword="false"/>.</remarks>
+    /// <param name="segment">The index of the schedule segment to evaluate.</param>
+    /// <returns>The updated <see cref="MonitorSchedule"/> state for the specified segment.</returns>
+    public MonitorSchedule CheckForScheduleStateChanges(int segment)
     {
         var modes = m_foxEssMain.GetModesFromDb();
-
         if (m_foxChargeActive)
-            if (chargeActive)
-                return MonitorSchedule.ChargePeriod;        // Charge already set so just return
-            else
-            {
-                chargeActive = SendModes(modes, seg, MonitorSchedule.ChargePeriod);
-                if (chargeActive)
-                {
-                    return MonitorSchedule.ChargePeriod;
-                }
-            }
+            modes[segment] = MonitorSchedule.ChargePeriod;
+        else if (m_foxBackupActive)
+            modes[segment] = MonitorSchedule.BackupPeriod;
+        else if (m_foxFeedInActive)
+            modes[segment] = MonitorSchedule.FeedInPeriod;
+        else if (m_foxDischargeActive)
+            modes[segment] = MonitorSchedule.DischargePeriod;
 
-        if (m_foxBackupActive)
-            if (backupActive)
-                return MonitorSchedule.BackupPeriod;        // Charge already set so just return
-            else
-            {
-                backupActive = SendModes(modes, seg, MonitorSchedule.BackupPeriod);
-                if (backupActive)
-                {
-                    return MonitorSchedule.BackupPeriod;
-                }
-            }
-
-        if (m_foxFeedInActive)
-            if (feedActive)
-                return MonitorSchedule.FeedInPeriod;        // Charge already set so just return
-            else
-            {
-                feedActive = SendModes(modes, seg, MonitorSchedule.FeedInPeriod);
-                if (feedActive)
-                {
-                    return MonitorSchedule.FeedInPeriod;
-                }
-            }
-
-        if (m_foxDischargeActive)
-            if (dischargeActive)
-                return MonitorSchedule.DischargePeriod;        // Charge already set so just return
-            else
-            {
-                dischargeActive = SendModes(modes, seg, MonitorSchedule.DischargePeriod);
-                if (dischargeActive)
-                {
-                    return MonitorSchedule.DischargePeriod;
-                }
-            }
-
-        // If the saved schedule is different to the current schedule - update the schedule
-        if (modes[seg] != m_foxEssMain.LatestModes[seg])
+        // Check for a state change
+        if (modes[segment] != m_foxEssMain.LatestModes[segment])
         {
-            m_foxEssMain.SetScheduleFromModes(modes);
+            // If the state change is due to an active flag set the override active flag
+            if (m_foxChargeActive || m_foxBackupActive || m_foxFeedInActive || m_foxDischargeActive)
+                m_overrideActive = true;
         }
+        else
+            m_overrideActive = false;
 
-        chargeActive = false;
-        backupActive = false;
-        feedActive = false;
-        dischargeActive = false;
-
-        m_lastSegment = seg;
-
-        return modes[seg];
-    }
-
-    int m_lastSegment = -1;
-
-    private bool m_overrideInProgress
-    {
-        get
-        {
-            return (chargeActive || backupActive || feedActive || dischargeActive);
-        }
-    }
-
-    private bool SendModes(MonitorSchedule[] modes, int seg, MonitorSchedule flagState)
-    {
-        switch (modes[seg])
-        {
-            // If the schedule requires a charge or discharge don't do a flag override
-            case MonitorSchedule.ChargePeriod:
-            case MonitorSchedule.DischargePeriod:
-                return false;
-
-            // If self use, feed in or backup and a flag is asking for something else
-            // Update the schedule to the flag state
-            default:
-                if (modes[seg] != flagState)
-                {
-                    modes[seg] = flagState;
-                    m_foxEssMain.SetScheduleFromModes(modes);
-                    return true;
-                }
-                return false;
-        }
+        return modes[segment];
     }
 
     private MonitorSchedule m_monitorState;
