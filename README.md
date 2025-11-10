@@ -7,7 +7,6 @@ The application runs as an add on to Home Assistant can be configured modify pre
 in response to boolean flags in Home Assistant e.g. the cheap rate or saving session flag
 
 ## Features
-The application:
 	- Gives easy access to FoxESS battery control settings in 30 minutes increments
 	- Works directly with the Fox Cloud API so no additional hardware required
 	- Is deployed and run as an Add On to Home Assistant
