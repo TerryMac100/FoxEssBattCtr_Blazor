@@ -113,7 +113,7 @@ else
     private async Task UpdateSchedule()
     {
         using var context = DbFactory.CreateDbContext();
-        context.Attach(m_schedule!).State = EntityState.Modified;
+        context.Attach(Schedule!).State = EntityState.Modified;
 
         try
         {

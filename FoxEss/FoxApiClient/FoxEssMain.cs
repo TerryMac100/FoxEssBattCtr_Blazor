@@ -239,48 +239,51 @@ public class FoxEssMain
                 return true;
             }
 
-            var request = GetHeader("/op/v1/device/scheduler/enable", RestSharp.Method.Post);
-            request.AddBody(setSchedule);
-
-            var client = new RestClient();
-            var response = await client.ExecuteAsync(request);
-
-            if (response.IsSuccessful && response.Content != null)
+            int retry = 1;
+            while (retry++ < retryRequest)
             {
-                SetScheduleResponse? ret = JsonConvert.DeserializeObject<SetScheduleResponse>(response.Content);
+                var request = GetHeader("/op/v1/device/scheduler/enable", RestSharp.Method.Post);
+                request.AddBody(setSchedule);
 
-                if (ret != null)
+                var client = new RestClient();
+                var response = await client.ExecuteAsync(request);
+
+                if (response.IsSuccessful && response.Content != null)
                 {
-                    if (ret.Errno == 0)
+                    SetScheduleResponse? ret = JsonConvert.DeserializeObject<SetScheduleResponse>(response.Content);
+
+                    if (ret != null)
                     {
-                        m_logger.LogInformation("Schedule sent OK");
-                        m_settings.StatusMessage = "Schedule sent OK";
-                        return true;
+                        if (ret.Errno == 0)
+                        {
+                            m_logger.LogInformation("Schedule sent OK");
+                            m_settings.StatusMessage = "Schedule sent OK";
+                            return true;
+                        }
+                        else
+                        {
+                            m_settings.StatusMessage = $"Sending Error No. {ret.Errno}";
+                            m_logger.LogWarning($"Send error number {ret.Errno} with message '{ret.Msg}', Re-try {retry}");
+                        }
                     }
                     else
                     {
-                        m_logger.LogWarning($"Schedule failed to send error number {ret.Errno} with message '{ret.Msg}'");
-                        m_settings.StatusMessage = $"Sending Error No. {ret.Errno}";
+                        m_settings.StatusMessage = "Sending Error";
+                        m_logger.LogWarning($"Send Error, return value null, Re-try {retry}");
                     }
+                }
+
+                if (response.IsSuccessful)
+                {
+                    m_settings.StatusMessage = "Sending Error";
+                    m_logger.LogWarning($"Send Error, response content null, Re-try {retry}");
                 }
                 else
                 {
                     m_settings.StatusMessage = "Sending Error";
-                    m_logger.LogWarning($"Send Error, return value null");
+                    m_logger.LogWarning($"Send Error, response fail, Re-try {retry}");
                 }
             }
-
-            if (response.IsSuccessful)
-            {
-                m_settings.StatusMessage = "Sending Error";
-                m_logger.LogWarning($"Send Error, response content null");
-            }
-            else
-            {
-                m_settings.StatusMessage = "Sending Error";
-                m_logger.LogWarning($"Send Error, response fail");
-            }
-                
             return false;
         }
         catch (Exception ex)
@@ -305,5 +308,7 @@ public class FoxEssMain
 
     private const string lang = "en";
     private const string domain = "https://www.foxesscloud.com";
+
+    private const int retryRequest = 3;
 }
 

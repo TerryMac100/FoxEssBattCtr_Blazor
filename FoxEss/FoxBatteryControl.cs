@@ -48,13 +48,6 @@ public class FoxBatteryControl
         m_logger.LogInformation($"FoxESS Monitor - Starting");
     }
 
-#if DEBUG
-    // The name of the enable flag is presided by "dev_" in the debug build
-    private bool m_callsEnabled => m_ha.Entity("input_boolean.dev_netdaemon_blazor_batt_control_fox_ess_fox_battery_control").State == "on";
-#else
-    private string m_callsEnabled => m_ha.Entity("input_boolean.netdaemon_blazor_batt_control_fox_ess_fox_battery_control").State;
-#endif
-
     private int m_retryDelayCount = 0;
 
     /// <summary>
@@ -72,7 +65,7 @@ public class FoxBatteryControl
 
         // When an override is active don't check the flag states in the first minute
         // of the half hour to allow for the input flags to stabilize
-        if (m_overrideActive && (dateTimeNow.Minute == 0 || dateTimeNow.Minute == 30))
+        if (m_skipStart && (dateTimeNow.Minute == 0 || dateTimeNow.Minute == 30))
             return;
 
         var seg = GetSegment(dateTimeNow);
@@ -80,6 +73,18 @@ public class FoxBatteryControl
         MonitorState = CheckForScheduleStateChanges(seg);
 
         m_retryDelayCount = m_settings.RetryBackOff;
+    }
+
+    // If state change is due to an active flag skip the first minute of the hour and half hour to allow for stabilization
+    private bool m_skipStart
+    {
+        get
+        {
+            if (m_foxChargeActive || m_foxBackupActive || m_foxFeedInActive || m_foxDischargeActive)
+                return true;
+
+            return false;
+        }
     }
 
     public int GetSegment(DateTime dateTime)
@@ -95,8 +100,6 @@ public class FoxBatteryControl
     private bool m_foxBackupActive => new Entity(m_ha, m_settings.BackupFlagEntityID).State == "on";
     private bool m_foxFeedInActive => new Entity(m_ha, m_settings.FeedInPriorityFlagEntityID).State == "on";
     private bool m_foxDischargeActive => new Entity(m_ha, m_settings.DischargeFlagEntityID).State == "on";
-
-    private bool m_overrideActive;
 
     /// <summary>
     /// Determines the current schedule state for the specified segment and updates the schedule if a state change is
@@ -124,14 +127,8 @@ public class FoxBatteryControl
         if (modes[segment] != m_settings.LatestModes[segment])
         {
             m_foxEssMain.SetScheduleFromModes(modes);
-
-            // If the state change is due to an active flag set the override active flag
-            if (m_foxChargeActive || m_foxBackupActive || m_foxFeedInActive || m_foxDischargeActive)
-                m_overrideActive = true;
         }
-        else
-            m_overrideActive = false;
-
+        
         return modes[segment];
     }
 
