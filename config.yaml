@@ -1,6 +1,6 @@
 name: "FoxESS_BattControl"
 description: "FoxESS Battery Control Application in Blazor"
-version: "1.27.0"
+version: "1.28.0"
 slug: "fox_ess_batt_control"
 init: false
 arch:

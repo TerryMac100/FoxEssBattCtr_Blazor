@@ -48,8 +48,6 @@ public class FoxBatteryControl
         m_logger.LogInformation($"FoxESS Monitor - Starting");
     }
 
-    private int m_retryDelayCount = 0;
-
     /// <summary>
     /// The main monitor loop runs periodically to check for flag state changes but is delayed when an override is active
     /// </summary>
@@ -58,8 +56,10 @@ public class FoxBatteryControl
         var dateTimeNow = DateTime.Now;
 
         // When an override is active don't check the flag states in the first minute
-        // of the half hour to allow for the input flags to stabilize
-        if (m_skipStart && (dateTimeNow.Minute == 0 || dateTimeNow.Minute == 30))
+        // of the half and full hour to allow for the input flags to stabilize
+        // Also skip the 29th and 59th minute as it not worth setting a segment that is just about to end
+        if ((m_skipStart && (dateTimeNow.Minute == 0 || dateTimeNow.Minute == 30)) ||
+            dateTimeNow.Minute == 29 || dateTimeNow.Minute == 59)
             return;
 
         var seg = GetSegment(dateTimeNow);
