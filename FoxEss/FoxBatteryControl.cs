@@ -55,12 +55,6 @@ public class FoxBatteryControl
     /// </summary>
     private void RunMonitor()
     {
-        if (m_retryDelayCount > 0)
-        {
-            m_retryDelayCount--;
-            return;
-        }
-
         var dateTimeNow = DateTime.Now;
 
         // When an override is active don't check the flag states in the first minute
@@ -71,8 +65,6 @@ public class FoxBatteryControl
         var seg = GetSegment(dateTimeNow);
 
         MonitorState = CheckForScheduleStateChanges(seg);
-
-        m_retryDelayCount = m_settings.RetryBackOff;
     }
 
     // If state change is due to an active flag skip the first minute of the hour and half hour to allow for stabilization

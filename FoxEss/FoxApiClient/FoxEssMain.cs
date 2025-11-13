@@ -1,4 +1,5 @@
 ﻿using NetDaemon.HassModel;
+using NetDaemon.HassModel.Entities;
 using NetDaemonMain.apps.FoxEss.FoxApiClient.Models;
 using Newtonsoft.Json;
 using RestSharp;
@@ -88,12 +89,6 @@ public class FoxEssMain
         if (status)
         {
             m_settings.LatestModes = modes;
-            m_settings.RetryBackOff = 0;
-        }
-        else
-        {
-            if (m_settings.RetryBackOff < backOffMax)
-                m_settings.RetryBackOff++;
         }
     }
 
@@ -108,12 +103,6 @@ public class FoxEssMain
         if (status)
         {
             m_settings.LatestModes = modes;
-            m_settings.RetryBackOff = 0;
-        }
-        else
-        {
-            if (m_settings.RetryBackOff < backOffMax)
-                m_settings.RetryBackOff++;
         }
     }
 
@@ -174,7 +163,6 @@ public class FoxEssMain
         return modes;
     }
 
-
     /// <summary>
     /// Schedules a task to update the schedule asynchronously.
     /// </summary>
@@ -192,6 +180,9 @@ public class FoxEssMain
 
         return t.Result;
     }
+
+    private bool m_reTryTestFlag => new Entity(m_ha, "input_boolean.fox_ess_re_try_test_flag").State == "on";
+
 
     // Any class decorated with the [NetDaemonApp] attribute will automatically generate a flag in Home Assistant if connected
     // with the following format BlazorBattControl (the project name) + BlazorBattControl.FoxEss (the name space) +
@@ -220,81 +211,111 @@ public class FoxEssMain
         var info = $"Sending Schedule\n{st}";
         m_logger.LogInformation(info);
 
-        try
+        bool returnValue = false;
+
+        int retry = 0;
+        while (retry++ < retryRequest && returnValue == false)
         {
-            if (apiCallEnabled == false || m_debugBuild == true)
-            {
-                // Simulate sending delay
-                await Task.Run(() =>
-                {
-                    Thread.Sleep(1000);
-                });
+            if (retry > 1)
+                m_logger.LogWarning($"Re-try {retry - 1}");
 
-                if (m_debugBuild)
-                    m_logger.LogInformation($"API Call disabled in debug build");
-                else
-                    m_logger.LogInformation($"API Call disabled in Home Assistant by API Enable flag");
-
-                m_settings.StatusMessage = "Debug OK";
-                return true;
-            }
-
-            int retry = 1;
-            while (retry++ < retryRequest)
+            try
             {
                 var request = GetHeader("/op/v1/device/scheduler/enable", RestSharp.Method.Post);
                 request.AddBody(setSchedule);
 
-                var client = new RestClient();
-                var response = await client.ExecuteAsync(request);
+                RestResponse response;
 
-                if (response.IsSuccessful && response.Content != null)
+                // In debug builds or if the api call is disabled we simulate a successful response
+                if (apiCallEnabled == false || m_debugBuild == true)
+                {
+                    response = new RestResponse();
+                    response.ResponseStatus = ResponseStatus.Completed;
+                    response.IsSuccessStatusCode = true;
+                    response.StatusCode = System.Net.HttpStatusCode.OK;
+                    response.Content = JsonConvert.SerializeObject(new SetScheduleResponse() { Errno = 0, Msg = "Ok"});
+                }
+                else
+                {
+                    var client = new RestClient();
+                    response = await client.ExecuteAsync(request);             
+                }
+
+                // Simulate various error conditions for testing re-try logic
+                if (m_reTryTestFlag)
+                {
+                    switch (retry)
+                    {
+                        case 1:
+                            response.StatusCode = System.Net.HttpStatusCode.InternalServerError;
+                            break;
+
+                        case 2:
+                            response.IsSuccessStatusCode = false;
+                            break;
+
+                        case 3:
+                            response.Content = null;
+                            response.StatusCode = System.Net.HttpStatusCode.OK;
+                            break;
+
+                        case 4:
+                            response.Content = "{\"errno\":123,\"msg\":\"Simulated Error\"}";
+                            response.StatusCode = System.Net.HttpStatusCode.OK;
+                            break;
+
+                        default:
+                            throw new Exception("Simulated API Exception throw");
+                    }
+                }
+
+                if (response.StatusCode != System.Net.HttpStatusCode.OK)
+                {
+                    m_settings.StatusMessage = "Sending Error";
+                    m_logger.LogWarning($"Send Error, status code {response.StatusCode}");
+                }
+                else if (response.IsSuccessful == false)
+                {
+                    m_settings.StatusMessage = "Sending Error";
+                    m_logger.LogWarning($"Send Error, IsSuccessful false");
+                }
+                else if (response.Content == null)
+                {
+                    m_settings.StatusMessage = "Sending Error";
+                    m_logger.LogWarning($"Send Error, return value null");
+                }
+                else
                 {
                     SetScheduleResponse? ret = JsonConvert.DeserializeObject<SetScheduleResponse>(response.Content);
 
                     if (ret != null)
                     {
-                        if (ret.Errno == 0)
+                        if (ret.Errno != 0)
                         {
-                            m_logger.LogInformation("Schedule sent OK");
-                            m_settings.StatusMessage = "Schedule sent OK";
-                            return true;
+                            m_settings.StatusMessage = $"Sending Error No. {ret.Errno}";
+                            m_logger.LogWarning($"Send error number {ret.Errno} with message '{ret.Msg}'");
                         }
                         else
                         {
-                            m_settings.StatusMessage = $"Sending Error No. {ret.Errno}";
-                            m_logger.LogWarning($"Send error number {ret.Errno} with message '{ret.Msg}', Re-try {retry}");
+                            // Everything OK
+                            m_logger.LogInformation($"Schedule sent OK");
+                            m_settings.StatusMessage = "Schedule sent OK";
+                            returnValue = true;
                         }
                     }
-                    else
-                    {
-                        m_settings.StatusMessage = "Sending Error";
-                        m_logger.LogWarning($"Send Error, return value null, Re-try {retry}");
-                    }
-                }
-
-                if (response.IsSuccessful)
-                {
-                    m_settings.StatusMessage = "Sending Error";
-                    m_logger.LogWarning($"Send Error, response content null, Re-try {retry}");
-                }
-                else
-                {
-                    m_settings.StatusMessage = "Sending Error";
-                    m_logger.LogWarning($"Send Error, response fail, Re-try {retry}");
                 }
             }
-            return false;
+            catch (Exception ex)
+            {
+                m_settings.StatusMessage = "Sending Error";
+                m_logger.LogWarning($"Exception while sending schedule, message '{ex.Message}'");
+            }
         }
-        catch (Exception ex)
-        {
-            m_settings.StatusMessage = "Sending Error";
-            m_logger.LogWarning($"Exception while sending schedule, message '{ex.Message}'");
-            return false;
-        }
+
+        return returnValue;
     }
 
-    private const int backOffMax = 3;
+    private const int backOffMax = 4;
 
     public enum MonitorSchedule
     {
@@ -309,6 +330,6 @@ public class FoxEssMain
     private const string lang = "en";
     private const string domain = "https://www.foxesscloud.com";
 
-    private const int retryRequest = 3;
+    private const int retryRequest = 5;
 }
 

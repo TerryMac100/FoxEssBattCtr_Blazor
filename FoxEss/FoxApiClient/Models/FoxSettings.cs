@@ -247,8 +247,6 @@ public class FoxSettings : INotifyPropertyChanged
     /// </summary>
     public MonitorSchedule[] LatestModes { get; set; } = new MonitorSchedule[48];
 
-    public int RetryBackOff = 0;
-
     public string StatusMessage
     {
         get
