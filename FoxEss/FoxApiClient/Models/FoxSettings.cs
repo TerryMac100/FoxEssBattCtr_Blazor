@@ -127,26 +127,6 @@ public class FoxSettings : INotifyPropertyChanged
         }
     }
 
-    public string ApiKey
-    {
-        get => settings.FoxApiKey;
-        set
-        {
-            settings.FoxApiKey = value;
-        }
-    }
-    public string DeviceSN
-    {
-        get
-        {
-            return settings.DeviceSN;
-        }
-        set
-        {
-            settings.DeviceSN = value;
-        }
-    }
-
     public string OffPeakFlagEntityID
     {
         get

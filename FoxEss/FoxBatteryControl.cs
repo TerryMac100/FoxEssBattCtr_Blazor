@@ -58,7 +58,7 @@ public class FoxBatteryControl
         // When an override is active don't check the flag states in the first minute
         // of the half and full hour to allow for the input flags to stabilize
         // Also skip the 29th and 59th minute as it not worth setting a segment that is just about to end
-        if ((m_skipStart && (dateTimeNow.Minute == 0 || dateTimeNow.Minute == 30)) ||
+        if (dateTimeNow.Minute == 0 || dateTimeNow.Minute == 30 ||
             dateTimeNow.Minute == 29 || dateTimeNow.Minute == 59)
             return;
 
@@ -67,19 +67,7 @@ public class FoxBatteryControl
         MonitorState = CheckForScheduleStateChanges(seg);
     }
 
-    // If state change is due to an active flag skip the first minute of the hour and half hour to allow for stabilization
-    private bool m_skipStart
-    {
-        get
-        {
-            if (m_foxChargeActive || m_foxBackupActive || m_foxFeedInActive || m_foxDischargeActive)
-                return true;
-
-            return false;
-        }
-    }
-
-    public int GetSegment(DateTime dateTime)
+    private int GetSegment(DateTime dateTime)
     {
         var seg = dateTime.Hour * 2;
         if (dateTime.Minute >= 30)
@@ -108,7 +96,7 @@ public class FoxBatteryControl
         var modes = m_foxEssMain.GetModesFromDb();
         if (m_foxChargeActive)
             modes[segment] = MonitorSchedule.ChargePeriod;
-        else if (m_foxBackupActive)
+        else if (m_foxBackupActive && modes[segment] != MonitorSchedule.ChargePeriod) // Charge has priority over backup
             modes[segment] = MonitorSchedule.BackupPeriod;
         else if (m_foxFeedInActive)
             modes[segment] = MonitorSchedule.FeedInPeriod;

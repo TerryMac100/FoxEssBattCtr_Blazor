@@ -298,8 +298,20 @@ public class FoxEssMain
                         else
                         {
                             // Everything OK
-                            m_logger.LogInformation($"Schedule sent OK");
-                            m_settings.StatusMessage = "Schedule sent OK";
+                            if (apiCallEnabled == false || m_debugBuild == true)
+                            {
+                                if (m_debugBuild)
+                                    m_logger.LogInformation($"API Calls Disabled in debug");
+                                else
+                                    m_logger.LogInformation($"API Calls Disabled by flag");  
+                                m_settings.StatusMessage = "API Call Disabled";
+                            }
+                            else
+                            {
+                                m_logger.LogInformation($"Schedule sent OK");
+                                m_settings.StatusMessage = "Schedule sent OK";                              
+                            }
+
                             returnValue = true;
                         }
                     }
@@ -309,7 +321,7 @@ public class FoxEssMain
             {
                 m_settings.StatusMessage = "Sending Error";
                 m_logger.LogWarning($"Exception while sending schedule, message '{ex.Message}'");
-            }
+            }       
         }
 
         return returnValue;

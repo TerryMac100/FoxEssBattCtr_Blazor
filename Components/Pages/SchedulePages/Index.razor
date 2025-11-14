@@ -15,10 +15,6 @@
 
 <h1>Schedules</h1>
 
-<p>
-    <a href="schedules/create">Create New</a>
-</p>
-
 <QuickGrid Class="table" Items="context.Schedule.OrderBy(x => x.Id)">
     <PropertyColumn Property="schedule => schedule.Name" Title="Name" />
     <PropertyColumn Property="schedule => schedule.MinSoc">
@@ -39,12 +35,12 @@
 
     <TemplateColumn Context="schedule">
         <a href="@($"schedules/edit?id={schedule.Id}")">Edit</a> |
-        <a href="@($"schedules/details?id={schedule.Id}")">Details</a> |
-        <a href="@($"schedules/delete?id={schedule.Id}")">Delete</a>
+        <a href="@($"schedules/details?id={schedule.Id}")">Details</a>
     </TemplateColumn>
 </QuickGrid>
 
 @code {
+
     private BlazorBattControlContext context = default!;
 
     protected override void OnInitialized()
