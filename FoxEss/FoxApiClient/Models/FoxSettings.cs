@@ -112,6 +112,9 @@ public class FoxSettings : INotifyPropertyChanged
     public void SaveSelector()
     {
         SelectedScheduleId = selectorId;
+
+        m_schedule = null; // Force reload of schedule
+
         UpdateSettings();
     }
 

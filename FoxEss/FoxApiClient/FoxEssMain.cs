@@ -181,8 +181,8 @@ public class FoxEssMain
         return t.Result;
     }
 
-    private bool m_reTryTestFlag => new Entity(m_ha, "input_boolean.fox_ess_re_try_test_flag").State == "on";
-
+    // This flag is used to simulate various error conditions for testing the re-try logic in both debug and release builds.
+    private bool m_simulateReTryTestFlag => new Entity(m_ha, "input_boolean.fox_ess_re_try_test_flag_a55bf64c-b644-4ff4-935e-66cce47995f0").State == "on";
 
     // Any class decorated with the [NetDaemonApp] attribute will automatically generate a flag in Home Assistant if connected
     // with the following format BlazorBattControl (the project name) + BlazorBattControl.FoxEss (the name space) +
@@ -242,7 +242,7 @@ public class FoxEssMain
                 }
 
                 // Simulate various error conditions for testing re-try logic
-                if (m_reTryTestFlag)
+                if (m_simulateReTryTestFlag)
                 {
                     switch (retry)
                     {
@@ -298,6 +298,8 @@ public class FoxEssMain
                         else
                         {
                             // Everything OK
+
+                            // In debug builds or if the api call is disabled we simulate a successful response
                             if (apiCallEnabled == false || m_debugBuild == true)
                             {
                                 if (m_debugBuild)
