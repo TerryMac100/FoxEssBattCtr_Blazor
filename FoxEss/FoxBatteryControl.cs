@@ -60,11 +60,41 @@ public class FoxBatteryControl
         // Also skip the 29th and 59th minute as it not worth setting a segment that is just about to end
         if (dateTimeNow.Minute == 0 || dateTimeNow.Minute == 30 ||
             dateTimeNow.Minute == 29 || dateTimeNow.Minute == 59)
+        {
+            //LookAheadMonitor(dateTimeNow);
             return;
+        }
 
         var seg = GetSegment(dateTimeNow);
 
         MonitorState = CheckForScheduleStateChanges(seg);
+    }
+
+    /// <summary>
+    /// Looks ahead to the next segment to see if a schedule change is needed
+    /// </summary>
+    /// <param name="dateTimeNow"></param>
+    private void LookAheadMonitor(DateTime dateTimeNow)
+    {
+        // Only look ahead on the minutes that are the last of the half and full hour
+        // Nothing happens in the first minute of the half and full hour
+        if (dateTimeNow.Minute == 0 || dateTimeNow.Minute == 30)
+            return;
+
+        var segment = GetSegment(dateTimeNow);
+        
+        // Look ahead to the next segment
+        segment += 1;
+        if (segment >= 48)
+            segment = 0;
+
+        var modes = m_foxEssMain.GetModesFromDb();
+
+        // Check to see if a schedule change is needed for the next segment
+        if (modes[segment] != m_settings.LatestModes[segment])
+        {
+            m_foxEssMain.SetScheduleFromModes(modes);
+        }
     }
 
     private int GetSegment(DateTime dateTime)

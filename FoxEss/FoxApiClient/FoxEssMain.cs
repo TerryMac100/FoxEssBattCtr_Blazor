@@ -221,7 +221,7 @@ public class FoxEssMain
 
             try
             {
-                var request = GetHeader("/op/v1/device/scheduler/enable", RestSharp.Method.Post);
+                var request = GetHeader("/op/v0/device/scheduler/enable", RestSharp.Method.Post);
                 request.AddBody(setSchedule);
 
                 RestResponse response;
