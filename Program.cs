@@ -1,6 +1,7 @@
 using BlazorBattControl.Components;
 using BlazorBattControl.Data;
 using BlazorBattControl.FoxEss;
+using BlazorBattControl.Logging;
 using Microsoft.EntityFrameworkCore;
 using NetDaemon.AppModel;
 using NetDaemon.Extensions.Logging;
@@ -15,11 +16,14 @@ namespace BlazorBattControl
     {
         public static void Main(string[] args)
         {
+            Environment.CurrentDirectory = AppDomain.CurrentDomain.BaseDirectory;
+
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Host
             .UseNetDaemonAppSettings()
             .UseNetDaemonDefaultLogging()
+            //.UseCustomLogging()
             .UseNetDaemonRuntime()
             .UseNetDaemonTextToSpeech()
             .ConfigureServices((_, services) =>
