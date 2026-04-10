@@ -100,7 +100,7 @@ else
     // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
     private void UpdateDbSettings()
     {
-        m_foxSettings.UpdateSettings();
+        m_foxSettings.SaveSettings();
 
         NavigationManager.NavigateTo("/");
     }

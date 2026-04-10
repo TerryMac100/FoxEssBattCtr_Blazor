@@ -2,6 +2,7 @@
 using BlazorBattControl.FoxEss.FoxApiClient;
 using BlazorBattControl.Models;
 using Microsoft.EntityFrameworkCore;
+using NetDaemon.HassModel;
 using System.ComponentModel;
 using static BlazorBattControl.FoxEss.FoxApiClient.FoxEssMain;
 
@@ -66,9 +67,10 @@ public class FoxSettings : INotifyPropertyChanged
         dbContext.SaveChanges();
     }
 
-    public void UpdateSettings()
+    public void SaveSettings()
     {
         using var context = m_dbFactory.CreateDbContext();
+        context.Update(settings);
 
         try
         {
@@ -82,6 +84,11 @@ public class FoxSettings : INotifyPropertyChanged
         }
 
         m_logger.LogInformation("AppDbSettings updated successfully.");
+    }
+    private void UpdateSettings()
+    {
+        //using var dbContext = m_dbFactory.CreateDbContext();
+        //dbContext.Update(settings);
     }
 
     private AppDbSettings? m_appDSsettings;
@@ -115,7 +122,7 @@ public class FoxSettings : INotifyPropertyChanged
 
         m_schedule = null; // Force reload of schedule
 
-        UpdateSettings();
+        SaveSettings();
     }
 
     public int SelectedScheduleId
@@ -127,6 +134,7 @@ public class FoxSettings : INotifyPropertyChanged
         set
         {
             settings.SeletedScheduleId = value;
+            UpdateSettings();
         }
     }
 
@@ -139,6 +147,7 @@ public class FoxSettings : INotifyPropertyChanged
         set
         {
             settings.OffPeakFlagEntityID = value;
+            UpdateSettings();
         }
     }
 
@@ -151,6 +160,7 @@ public class FoxSettings : INotifyPropertyChanged
         set
         {
             settings.BackupFlagEntityID = value;
+            UpdateSettings();
         }
     }
     
@@ -163,6 +173,7 @@ public class FoxSettings : INotifyPropertyChanged
         set
         {
             settings.FeedInPriorityFlagEntityID = value;
+            UpdateSettings();
         }
     }
 
@@ -175,6 +186,8 @@ public class FoxSettings : INotifyPropertyChanged
         set
         {
             settings.DischargeFlagEntityID = value;
+            UpdateSettings();
+
         }
     }
 
@@ -187,6 +200,7 @@ public class FoxSettings : INotifyPropertyChanged
         set
         {
             settings.UseOffPeakFlag = value;
+            UpdateSettings();
         }
     }
 

@@ -97,7 +97,7 @@ public class FoxBatteryControl
         }
     }
 
-    private int GetSegment(DateTime dateTime)
+    public static int GetSegment(DateTime dateTime)
     {
         var seg = dateTime.Hour * 2;
         if (dateTime.Minute >= 30)

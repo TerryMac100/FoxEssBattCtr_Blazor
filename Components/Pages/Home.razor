@@ -1,7 +1,10 @@
 ﻿@page "/"
 @using BlazorBattControl.Data
+@using BlazorBattControl.FoxEss
 @using BlazorBattControl.FoxEss.FoxApiClient
 @using BlazorBattControl.Models
+@using BlazorBattControl.Octopus
+@using BlazorBattControl.Octopus.Models
 @using Microsoft.EntityFrameworkCore
 @using NetDaemonMain.apps.FoxEss.FoxApiClient.Models
 @using System.ComponentModel
@@ -10,6 +13,7 @@
 @inject NavigationManager NavManager
 @inject FoxEssMain m_foxEssMain
 @inject FoxSettings m_foxSettings
+@inject OctopusApiClient m_octopusApiClient
 
 @implements IDisposable 
 
@@ -52,10 +56,15 @@
         text-align: center;
     }
 
+    .h-text-bold {
+        font-size: 10px;
+        text-align: center;
+        font-weight: 900;
+    }
+
     .h-row {
         font-size: 8px;
     }
-
 
     .t-centre{
         text-align: center;
@@ -88,7 +97,7 @@
 
 </style>
 
-<div style="max-width: 280px;">
+<div style="max-width: 350px;">
     <select class="form-control" style="width: 280px" value="@selected" @onchange="SetSelected">
         @foreach (var schedule in m_foxSettings.AllSchedules.OrderBy(m => m.Id))
         {
@@ -120,46 +129,86 @@
     <table class="tableFixHead">
         <thead>
             <tr>
-                <th class="h-text" width="70">Period</th>
+                <th class="h-text" width="80">Period</th>
                 <th class="h-text">Charge</th>
                 <th class="h-text">Backup</th>
                 <th class="h-text">SelfUse</th>
                 <th class="h-text">Feed-In</th>
                 <th class="h-text">Dis-Chg</th>
+                <th class="h-text">Agile I/P</th>
+                <th class="h-text">Agile ExP</th>
             </tr>
         </thead>
 
         <tbody >
-                @for (int row = 0; row < 48; row++)
+        @for (int row = 0; row < 48; row++)
+        {
+            TimeOnly s_time = new TimeOnly(row / 2, (row % 2) * 30);
+            TimeOnly e_time = new TimeOnly(row / 2, (row % 2) * 30);
+            e_time = e_time.AddMinutes(29);
+                <tr>
+                @if (row == currentRow)
                 {
-                    TimeOnly s_time = new TimeOnly(row / 2, (row % 2) * 30);
-                    TimeOnly e_time = new TimeOnly(row / 2, (row % 2) * 30);
-                    e_time = e_time.AddMinutes(29);
-                    <tr>
-                        <td class="t-centre">
-                            <label class="h-text">@s_time - @e_time</label>
-                        </td>
-                        @for (int x = 0; x < 5; x++)
-                        {
-                            int local_row = row;
-                            int _x = x;
-
-                            <td>
-                                <label class="tool_tip_radio_button" data-toggle="tooltip" data-placement="bottom" title="@buttionNames[x]">
-                                    <input type="radio" class="radio_base radio_1"
-                                           checked="@buttonStates[_x, local_row]"
-                                           name=@row onchange="@(() => OnCheckChange(local_row, _x))" />
-                                </label>
-                            </td>
-                        }
-                    </tr>
+                    <td class="t-centre">
+                        <label class="h-text-bold">@s_time - @e_time</label>
+                    </td>
                 }
-            </tbody>
+                else
+                {
+                    <td class="t-centre">
+                        <label class="h-text">@s_time - @e_time</label>
+                    </td>            
+                }
+                @{
+                    int local_row = row;
+                }
+                @for (int x = 0; x < 5; x++)
+                {
+                    int _x = x;
+
+                    <td>
+                        <label class="tool_tip_radio_button" data-toggle="tooltip" data-placement="bottom" title="@buttionNames[x]">
+                            <input type="radio" class="radio_base radio_1"
+                                    checked="@buttonStates[_x, local_row]"
+                                    name=@row onchange="@(() => OnCheckChange(local_row, _x))" />
+                        </label>
+                    </td>
+                }
+
+                @if (row == currentRow)
+                {
+                    <td class="t-centre">
+                            <label class="h-text-bold">@agileImport[local_row]</label>
+                    </td>
+                    <td class="t-centre">
+                            <label class="h-text-bold">@agileExport[local_row]</label>
+                    </td>
+                }
+                else
+                {
+                    <td class="t-centre">
+                        <label class="h-text">@agileImport[local_row]</label>
+                    </td>
+                    <td class="t-centre">
+                        <label class="h-text">@agileExport[local_row]</label>
+                    </td>                                       
+                }
+            </tr>
+        } 
+        </tbody>
     </table>
 </div>
 
 @code
 {
+    private int currentRow
+    {
+        get
+        {
+            return FoxBatteryControl.GetSegment(DateTime.Now);
+        }   
+    }
+
     private bool m_editActive;
 
     private bool editActive
@@ -192,6 +241,9 @@
     private string[] buttionNames = { "Charge ", "Backup ", "SelfUse", "Feed_In", "Dis_Chg" };
 
     private bool[,] buttonStates = new bool[5, 48];
+
+    private string?[] agileExport = new string?[48];
+    private string?[] agileImport = new string?[48];
 
     private void SaveChanges()
     {
@@ -267,9 +319,49 @@
     {
         if (firstRender)
         {
+            DateTime now = DateTime.Now;
+
+            export = m_octopusApiClient.GetAgileExport(now);
+            import = m_octopusApiClient.GetAgileImport(now);
+
+            currentSeg = FoxBatteryControl.GetSegment(now);
+
             selected = m_foxSettings.SelectedScheduleId;
             SelectionUpdated();
             editActive = false;
+        }
+
+        SetAgileValues();
+    }
+
+    private List<CostItem> export = new List<CostItem>();
+    private List<CostItem> import = new List<CostItem>();
+    private int currentSeg;
+
+    private void SetAgileValues()
+    {
+        for (int row = 0; row < 48; row++)
+        {
+            if (row < export.Count)
+                agileExport[row] = export[row].value_inc_vat.ToString("0.00");
+
+            if (row < import.Count)
+                agileImport[row] = import[row].value_inc_vat.ToString("0.00");
+        }
+
+        for (int row = 0; row < 48; row++)
+        {
+            var seg = row;
+            if (row < currentSeg)
+            {
+                seg += 48;
+            }
+
+            if (seg < export.Count)
+                agileExport[row] = export[seg].value_inc_vat.ToString("0.00");
+
+            if (seg < import.Count)
+                agileImport[row] = import[seg].value_inc_vat.ToString("0.00");
         }
     }
 
