@@ -1,4 +1,6 @@
 ﻿using BlazorBattControl.FoxEss.FoxApiClient;
+using BlazorBattControl.Octopus;
+using BlazorBattControl.Octopus.Models;
 using NetDaemon.AppModel;
 using NetDaemon.Extensions.Scheduler;
 using NetDaemon.HassModel;
@@ -17,6 +19,7 @@ public class FoxBatteryControl
     private readonly IHaContext m_ha;
     private readonly FoxEssMain m_foxEssMain;
     private readonly FoxSettings m_settings;
+    private readonly OctopusApiClient m_octopusApiClient;
     private readonly ILogger<FoxBatteryControl> m_logger;
 
     private readonly INetDaemonScheduler m_scheduler;
@@ -26,6 +29,7 @@ public class FoxBatteryControl
         INetDaemonScheduler scheduler,
         FoxEssMain foxEssMain,
         FoxSettings foxSettings,
+        OctopusApiClient octopusApiClient,
         ILogger<FoxBatteryControl> logger)
     {
         m_ha = ha;
@@ -33,6 +37,7 @@ public class FoxBatteryControl
         m_foxEssMain = foxEssMain;
         m_settings = foxSettings;
         m_logger = logger;
+        m_octopusApiClient = octopusApiClient;  
 
         InitialiseMonitor();
 
@@ -48,12 +53,40 @@ public class FoxBatteryControl
         m_logger.LogInformation($"FoxESS Monitor - Starting");
     }
 
+    private List<CostItem>? export = new List<CostItem>();
+    private List<CostItem>? import = new List<CostItem>();
+
     /// <summary>
     /// The main monitor loop runs periodically to check for flag state changes but is delayed when an override is active
     /// </summary>
     private void RunMonitor()
     {
         var dateTimeNow = DateTime.Now;
+        var seg = GetSegment(dateTimeNow);
+        
+        RefreshAgileRate();
+
+        if (export == null || import == null)
+        {
+            import = m_octopusApiClient.GetAgileImport(dateTimeNow);
+            export = m_octopusApiClient.GetAgileExport(dateTimeNow);
+        }
+        else
+        {
+            if (seg < import.Count && seg < export.Count)
+            {
+                var importEntity = new Entity(m_ha, "input_number.agile_import_rate");
+                importEntity.CallService("set_value", new { value = import[seg].value_inc_vat });
+
+                var exportEntity = new Entity(m_ha, "input_number.agile_export_rate");
+                exportEntity.CallService("set_value", new { value = (export[seg].value_inc_vat )});
+            }
+            else
+            {
+                import = m_octopusApiClient.GetAgileImport(dateTimeNow);
+                export = m_octopusApiClient.GetAgileExport(dateTimeNow);
+            }
+        }
 
         // When an override is active don't check the flag states in the first minute
         // of the half and full hour to allow for the input flags to stabilize
@@ -61,14 +94,23 @@ public class FoxBatteryControl
         if (dateTimeNow.Minute == 0 || dateTimeNow.Minute == 30 ||
             dateTimeNow.Minute == 29 || dateTimeNow.Minute == 59)
         {
-            //LookAheadMonitor(dateTimeNow);
+            // refresh export/import rates every half hour
+            if (dateTimeNow.Minute == 29 || dateTimeNow.Minute == 59)
+            {
+                export = null;
+                import = null;
+            }
             return;
         }
 
-        var seg = GetSegment(dateTimeNow);
-
         MonitorState = CheckForScheduleStateChanges(seg);
+    }   
+
+    private void RefreshAgileRate()
+    {
     }
+
+
 
     /// <summary>
     /// Looks ahead to the next segment to see if a schedule change is needed

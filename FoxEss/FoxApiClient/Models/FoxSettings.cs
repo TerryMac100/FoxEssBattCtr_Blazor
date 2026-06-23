@@ -2,7 +2,6 @@
 using BlazorBattControl.FoxEss.FoxApiClient;
 using BlazorBattControl.Models;
 using Microsoft.EntityFrameworkCore;
-using NetDaemon.HassModel;
 using System.ComponentModel;
 using static BlazorBattControl.FoxEss.FoxApiClient.FoxEssMain;
 
@@ -150,6 +149,19 @@ public class FoxSettings : INotifyPropertyChanged
             UpdateSettings();
         }
     }
+     
+    public bool OffPeakEnabled
+    {
+        get
+        {
+            return settings.OffPeakEnabled;
+        }
+        set
+        {
+            settings.OffPeakEnabled = value;
+            UpdateSettings();
+        }
+    }
 
     public string BackupFlagEntityID
     {
@@ -164,6 +176,19 @@ public class FoxSettings : INotifyPropertyChanged
         }
     }
     
+    public bool BackupEnabled
+    {
+        get
+        {
+            return settings.BackupEnabled;
+        }
+        set
+        {
+            settings.BackupEnabled = value;
+            UpdateSettings();
+        }
+    }
+
     public string FeedInPriorityFlagEntityID
     {
         get
@@ -173,6 +198,19 @@ public class FoxSettings : INotifyPropertyChanged
         set
         {
             settings.FeedInPriorityFlagEntityID = value;
+            UpdateSettings();
+        }
+    }
+
+    public bool FeedInPriorityEnabled
+    {
+        get
+        {
+            return settings.FeedInPriorityEnabled;
+        }
+        set
+        {
+            settings.FeedInPriorityEnabled = value;
             UpdateSettings();
         }
     }
@@ -188,6 +226,100 @@ public class FoxSettings : INotifyPropertyChanged
             settings.DischargeFlagEntityID = value;
             UpdateSettings();
 
+        }
+    }
+
+    public string AgileDischargeFlagEntityID
+    {
+        get
+        {
+            return settings.AgileDischargeFlagEntityID;
+        }
+        set
+        {
+            settings.AgileDischargeFlagEntityID = value;
+            UpdateSettings();
+        }
+    }
+
+    public string AgileChargeFlagEntityID 
+    {
+        get
+        {
+            return settings.AgileChargeFlagEntityID;
+        }
+        set
+        {
+            settings.AgileChargeFlagEntityID = value;
+            UpdateSettings();
+        }
+    }
+
+
+    public double AgileDischargeThreshold 
+    {
+        get
+        {
+            return settings.AgileDischargeThreshold;
+        }
+        set
+        {
+            settings.AgileDischargeThreshold = value;
+            UpdateSettings();
+        }
+    }
+
+    public double AgileChargeThreshold 
+    {
+        get
+        {
+            return settings.AgileChargeThreshold;
+        }
+        set
+        {
+            settings.AgileChargeThreshold = value;
+            UpdateSettings();
+        }
+    }
+
+
+    public string AgileExportRateEntityID
+    {
+        get
+        {
+            return settings.AgileExportRateEntityID;
+        }
+        set
+        {
+            settings.AgileExportRateEntityID = value;
+            UpdateSettings();
+        }
+    }
+
+    public string AgileImportRateEntityID
+    {
+        get
+        {
+            return settings.AgileImportRateEntityID;
+        }
+        set
+        {
+            settings.AgileImportRateEntityID = value;
+            UpdateSettings();
+        }
+    }
+
+
+    public bool DischargeEnabled
+    {
+        get
+        {
+            return settings.DischargeEnabled;
+        }
+        set
+        {
+            settings.DischargeEnabled = value;
+            UpdateSettings();
         }
     }
 

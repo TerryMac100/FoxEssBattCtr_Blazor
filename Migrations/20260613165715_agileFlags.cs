@@ -5,57 +5,57 @@
 namespace BlazorBattControl.Migrations
 {
     /// <inheritdoc />
-    public partial class AppSettings : Migration
+    public partial class agileFlags : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<string>(
-                name: "DeviceSN",
+                name: "AgileChargeFlagEntityID",
                 table: "AppDbSettings",
                 type: "TEXT",
                 nullable: false,
                 defaultValue: "");
+
+            migrationBuilder.AddColumn<double>(
+                name: "AgileChargeThreshold",
+                table: "AppDbSettings",
+                type: "REAL",
+                nullable: false,
+                defaultValue: 0.0);
 
             migrationBuilder.AddColumn<string>(
-                name: "FoxApiKey",
+                name: "AgileDischargeFlagEntityID",
                 table: "AppDbSettings",
                 type: "TEXT",
                 nullable: false,
                 defaultValue: "");
 
-            migrationBuilder.AddColumn<string>(
-                name: "OffPeakFlagEntityID",
+            migrationBuilder.AddColumn<double>(
+                name: "AgileDischargeThreshold",
                 table: "AppDbSettings",
-                type: "TEXT",
+                type: "REAL",
                 nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<bool>(
-                name: "UseOffPeakFlag",
-                table: "AppDbSettings",
-                type: "INTEGER",
-                nullable: false,
-                defaultValue: false);
+                defaultValue: 0.0);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "DeviceSN",
+                name: "AgileChargeFlagEntityID",
                 table: "AppDbSettings");
 
             migrationBuilder.DropColumn(
-                name: "FoxApiKey",
+                name: "AgileChargeThreshold",
                 table: "AppDbSettings");
 
             migrationBuilder.DropColumn(
-                name: "OffPeakFlagEntityID",
+                name: "AgileDischargeFlagEntityID",
                 table: "AppDbSettings");
 
             migrationBuilder.DropColumn(
-                name: "UseOffPeakFlag",
+                name: "AgileDischargeThreshold",
                 table: "AppDbSettings");
         }
     }

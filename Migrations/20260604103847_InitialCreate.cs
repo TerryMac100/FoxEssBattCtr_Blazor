@@ -5,7 +5,7 @@
 namespace BlazorBattControl.Migrations
 {
     /// <inheritdoc />
-    public partial class FirstDatabaseV : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -16,7 +16,16 @@ namespace BlazorBattControl.Migrations
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    SeletedScheduleId = table.Column<int>(type: "INTEGER", nullable: false)
+                    SeletedScheduleId = table.Column<int>(type: "INTEGER", nullable: false),
+                    OffPeakFlagEntityID = table.Column<string>(type: "TEXT", nullable: false),
+                    OffPeakEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
+                    BackupFlagEntityID = table.Column<string>(type: "TEXT", nullable: false),
+                    BackupEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
+                    FeedInPriorityFlagEntityID = table.Column<string>(type: "TEXT", nullable: false),
+                    FeedInPriorityEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
+                    DischargeFlagEntityID = table.Column<string>(type: "TEXT", nullable: false),
+                    DischargeEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
+                    UseOffPeakFlag = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {

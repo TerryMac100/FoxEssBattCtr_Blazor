@@ -329,6 +329,8 @@
             selected = m_foxSettings.SelectedScheduleId;
             SelectionUpdated();
             editActive = false;
+
+            InvokeAsync(() => StateHasChanged());
         }
 
         SetAgileValues();

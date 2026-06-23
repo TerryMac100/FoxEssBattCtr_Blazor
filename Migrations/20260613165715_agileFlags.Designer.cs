@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BlazorBattControl.Migrations
 {
     [DbContext(typeof(BlazorBattControlContext))]
-    [Migration("20251024233052_AppSettings")]
-    partial class AppSettings
+    [Migration("20260613165715_agileFlags")]
+    partial class agileFlags
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,13 +25,43 @@ namespace BlazorBattControl.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("DeviceSN")
+                    b.Property<string>("AgileChargeFlagEntityID")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("FoxApiKey")
+                    b.Property<double>("AgileChargeThreshold")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("AgileDischargeFlagEntityID")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<double>("AgileDischargeThreshold")
+                        .HasColumnType("REAL");
+
+                    b.Property<bool>("BackupEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("BackupFlagEntityID")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("DischargeEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DischargeFlagEntityID")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("FeedInPriorityEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("FeedInPriorityFlagEntityID")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("OffPeakEnabled")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("OffPeakFlagEntityID")
                         .IsRequired()

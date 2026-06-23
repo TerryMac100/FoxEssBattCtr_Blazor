@@ -12,11 +12,31 @@ public class AppDbSettings
 
     public string OffPeakFlagEntityID { get; set; } = string.Empty;
 
+    public bool OffPeakEnabled { get; set; }
+
     public string BackupFlagEntityID { get; set; } = string.Empty;
+
+    public bool BackupEnabled { get; set; }
 
     public string FeedInPriorityFlagEntityID { get; set; } = string.Empty;
     
+    public bool FeedInPriorityEnabled { get; set; }
+
     public string DischargeFlagEntityID { get; set; } = string.Empty;
+
+    public bool DischargeEnabled { get; set; }
+
+    public string AgileDischargeFlagEntityID { get; set; } = string.Empty;
+
+    public string AgileChargeFlagEntityID { get; set; } = string.Empty;
+
+    public string AgileExportRateEntityID { get; set; } = string.Empty;
+
+    public string AgileImportRateEntityID { get; set; } = string.Empty;
+
+    public double AgileDischargeThreshold { get; set; }
+    
+    public double AgileChargeThreshold { get; set; }
 
     public bool UseOffPeakFlag { get; set; }
 
@@ -28,7 +48,17 @@ public class AppDbSettings
             BackupFlagEntityID = BackupFlagEntityID,
             DischargeFlagEntityID = DischargeFlagEntityID,
             OffPeakFlagEntityID = OffPeakFlagEntityID,
-            FeedInPriorityFlagEntityID = FeedInPriorityFlagEntityID
+            FeedInPriorityFlagEntityID = FeedInPriorityFlagEntityID,
+            
+            OffPeakEnabled = OffPeakEnabled,
+            BackupEnabled = BackupEnabled,
+            FeedInPriorityEnabled = FeedInPriorityEnabled,
+            DischargeEnabled = DischargeEnabled,
+
+            AgileChargeFlagEntityID = AgileChargeFlagEntityID,
+            AgileChargeThreshold = AgileChargeThreshold,
+            AgileDischargeFlagEntityID = AgileDischargeFlagEntityID,
+            AgileDischargeThreshold = AgileDischargeThreshold
         };
     }
 }

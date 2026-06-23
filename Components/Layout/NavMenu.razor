@@ -1,4 +1,10 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@rendermode InteractiveServer
+
+<styel>
+
+</styel>    
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">FoxESS Battery Control</a>
     </div>
@@ -15,17 +21,43 @@
         </div>
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="schedules">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Schedules
+            <NavLink class="nav-link" @onclick="() => expandSettings = !expandSettings">
+                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Home Assistant
             </NavLink>
+
+            @if (expandSettings)
+            {
+                <NavLink class="nav-link px-5" href="settings">
+                    <span aria-hidden="true"></span> Input
+                </NavLink>
+                <NavLink class="nav-link px-5" href="opsettings">
+                    <span aria-hidden="true"></span> Output
+                </NavLink>
+            }
         </div>
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="settings">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Settings
+            <NavLink class="nav-link" @onclick="() => expandSchedules = !expandSchedules">
+                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Schedules
             </NavLink>
-        </div>
 
+            @if (expandSchedules)
+            {
+                <NavLink class="nav-link px-5" href="schedules">
+                    <span aria-hidden="true"></span> Edit
+                </NavLink>
+                <NavLink class="nav-link px-5" href="schedules/create">
+                    <span aria-hidden="true"></span> Create
+                </NavLink>
+            }
+        </div>
     </nav>
 </div>
 
+@code {
+    private bool expandSchedules;
+    private bool expandSettings;
+    private bool expandAgile;
+
+
+}

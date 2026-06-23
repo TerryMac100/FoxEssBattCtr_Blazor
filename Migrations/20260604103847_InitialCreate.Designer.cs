@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BlazorBattControl.Migrations
 {
     [DbContext(typeof(BlazorBattControlContext))]
-    [Migration("20251114183109_RevovedApiKeyAndSN")]
-    partial class RevovedApiKeyAndSN
+    [Migration("20260604103847_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,17 +25,29 @@ namespace BlazorBattControl.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("BackupEnabled")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("BackupFlagEntityID")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("DischargeEnabled")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("DischargeFlagEntityID")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("FeedInPriorityEnabled")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("FeedInPriorityFlagEntityID")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("OffPeakEnabled")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("OffPeakFlagEntityID")
                         .IsRequired()

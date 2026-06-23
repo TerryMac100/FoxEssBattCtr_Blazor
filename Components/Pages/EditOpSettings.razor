@@ -1,4 +1,4 @@
-﻿@page "/settings"
+@page "/opsettings"
 @using Microsoft.EntityFrameworkCore
 @using BlazorBattControl.Models
 @using NetDaemonMain.apps.FoxEss.FoxApiClient.Models
@@ -8,7 +8,7 @@
 @rendermode InteractiveServer
 
 <style>
-    .input-full-width{
+    .input-full-width {
         width: 100%;
     }
 
@@ -22,6 +22,7 @@
         width: 80px;
         float: right;
     }
+
     .label-wrap {
         display: flex;
     }
@@ -33,9 +34,9 @@
 
 </style>
 
-<PageTitle>Home Assistant Inputs</PageTitle>
+<PageTitle>Home Assistant Outputs</PageTitle>
 
-<h1>Inputs</h1>
+<h1>Outputs</h1>
 
 <hr />
 @if (m_foxSettings is null)
@@ -46,46 +47,26 @@ else
 {
     <div class="row input-full-width">
         <div class="col-md-4 input-full-width">
-            <EditForm method="post" Model="m_foxSettings" OnValidSubmit="UpdateDbSettings" FormName="edit" Enhance>               
+            <EditForm method="post" Model="m_foxSettings" OnValidSubmit="UpdateDbSettings" FormName="edit" Enhance>
                 <div class="mb-3">
-                    <label for="description" class="form-label">HA Battery Charge Flag ID:</label>
+                    <label for="description" class="form-label">HA Agile Export Rate Entity:</label>
 
                     <div class="label-wrap">
-                        <InputText id="OffPeakFlagEntityID" @bind-Value="m_foxSettings.OffPeakFlagEntityID" class="form-control" />
-                        <ValidationMessage For="() => m_foxSettings.OffPeakFlagEntityID" class="text-danger" />
-                        <InputCheckbox id="OffPeakFlagEntityIDEnabled" @bind-Value="m_foxSettings.OffPeakEnabled" class="radio-enable" />
+                        <InputText id="AgileExportRateEntityID" @bind-Value="m_foxSettings.AgileExportRateEntityID" class="form-control" />
+                        <ValidationMessage For="() => m_foxSettings.AgileExportRateEntityID" class="text-danger" />
                     </div>
                 </div>
 
                 <div class="mb-3">
-                    <label for="description" class="form-label">HA Battery Backup Flag ID:</label>
+                    <label for="description" class="form-label">HA Agile Import Rate Entity:</label>
                     <div class="label-wrap">
-                        <InputText id="BackupFlagEntityID" @bind-Value="m_foxSettings.BackupFlagEntityID" class="form-control" />
-                        <ValidationMessage For="() => m_foxSettings.BackupFlagEntityID" class="text-danger" />
-                        <InputCheckbox id="OffPeakFlagEntityIDEnabled" @bind-Value="m_foxSettings.BackupEnabled" class="radio-enable" />
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label for="description" class="form-label">HA Feed In Priority Flag ID:</label>
-                    <div class="label-wrap">
-                        <InputText id="FeedInPriorityFlagEntityID" @bind-Value="m_foxSettings.FeedInPriorityFlagEntityID" class="form-control" />
-                        <ValidationMessage For="() => m_foxSettings.FeedInPriorityFlagEntityID" class="text-danger" />
-                        <InputCheckbox id="OffPeakFlagEntityIDEnabled" @bind-Value="m_foxSettings.FeedInPriorityEnabled" class="radio-enable" />
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label for="description" class="form-label">HA Discharge Flag ID:</label>
-                    <div class="label-wrap">
-                        <InputText id="DischargeFlagEntityID" @bind-Value="m_foxSettings.DischargeFlagEntityID" class="form-control" />
-                        <ValidationMessage For="() => m_foxSettings.DischargeFlagEntityID" class="text-danger" />
-                        <InputCheckbox id="OffPeakFlagEntityIDEnabled" @bind-Value="m_foxSettings.DischargeEnabled" class="radio-enable" />
+                        <InputText id="AgileImportRateEntityID" @bind-Value="m_foxSettings.AgileImportRateEntityID" class="form-control" />
+                        <ValidationMessage For="() => m_foxSettings.AgileImportRateEntityID" class="text-danger" />
                     </div>
                 </div>
 
                 <button type="submit" class="btn btn-primary save-cancel">Save</button>
-                <button class="btn btn-primary save-cancel-right"  @onclick="Cancel">Cancel</button>
+                <button class="btn btn-primary save-cancel-right" @onclick="Cancel">Cancel</button>
             </EditForm>
         </div>
     </div>
@@ -118,6 +99,17 @@ else
             m_foxSettings.settings.BackupEnabled = settingsBackup.BackupEnabled;
             m_foxSettings.settings.FeedInPriorityEnabled = settingsBackup.FeedInPriorityEnabled;
             m_foxSettings.settings.DischargeEnabled = settingsBackup.DischargeEnabled;
+
+
+            m_foxSettings.settings.AgileChargeFlagEntityID = settingsBackup.AgileChargeFlagEntityID;
+            m_foxSettings.settings.AgileChargeThreshold = settingsBackup.AgileChargeThreshold;
+
+            m_foxSettings.settings.AgileChargeThreshold = settingsBackup.AgileChargeThreshold;
+            m_foxSettings.settings.AgileDischargeThreshold = settingsBackup.AgileDischargeThreshold;
+
+
+            m_foxSettings.settings.AgileExportRateEntityID = settingsBackup.AgileExportRateEntityID;
+            m_foxSettings.settings.AgileImportRateEntityID = settingsBackup.AgileImportRateEntityID;
         }
     }
 
