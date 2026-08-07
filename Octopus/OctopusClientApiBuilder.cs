@@ -1,4 +1,6 @@
-﻿namespace BlazorBattControl.Octopus;
+﻿using BlazorBattControl.Data;
+
+namespace BlazorBattControl.Octopus;
 
 public static class OctopusClientApiBuilder
 {   
@@ -7,6 +9,7 @@ public static class OctopusClientApiBuilder
         hostBuilder.ConfigureServices(services =>
         {
             services.AddTransient<OctopusApiClient>();
+            services.AddSingleton<AgileRateValues>();
         });
 
         return hostBuilder;

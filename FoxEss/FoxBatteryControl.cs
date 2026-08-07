@@ -1,4 +1,5 @@
-﻿using BlazorBattControl.FoxEss.FoxApiClient;
+﻿using BlazorBattControl.Data;
+using BlazorBattControl.FoxEss.FoxApiClient;
 using BlazorBattControl.Octopus;
 using BlazorBattControl.Octopus.Models;
 using NetDaemon.AppModel;
@@ -23,6 +24,7 @@ public class FoxBatteryControl
     private readonly ILogger<FoxBatteryControl> m_logger;
 
     private readonly INetDaemonScheduler m_scheduler;
+    private readonly AgileRateValues m_agileRateValues;
 
     public FoxBatteryControl(
         IHaContext ha,
@@ -30,6 +32,7 @@ public class FoxBatteryControl
         FoxEssMain foxEssMain,
         FoxSettings foxSettings,
         OctopusApiClient octopusApiClient,
+        AgileRateValues agileRateValues,
         ILogger<FoxBatteryControl> logger)
     {
         m_ha = ha;
@@ -37,6 +40,7 @@ public class FoxBatteryControl
         m_foxEssMain = foxEssMain;
         m_settings = foxSettings;
         m_logger = logger;
+        m_agileRateValues = agileRateValues;
         m_octopusApiClient = octopusApiClient;  
 
         InitialiseMonitor();
@@ -62,9 +66,10 @@ public class FoxBatteryControl
     private void RunMonitor()
     {
         var dateTimeNow = DateTime.Now;
-        var seg = GetSegment(dateTimeNow);
-        
-        RefreshAgileRate();
+        //var seg = GetSegment(dateTimeNow);
+
+        //if (m_agileRateValues.export == null || m_agileRateValues.export.Count == 0)
+        m_agileRateValues.RefreshRates(dateTimeNow);
 
         if (export == null || import == null)
         {
@@ -73,13 +78,13 @@ public class FoxBatteryControl
         }
         else
         {
-            if (seg < import.Count && seg < export.Count)
+            if (m_agileRateValues.currentSeg < import.Count && m_agileRateValues.currentSeg < export.Count)
             {
                 var importEntity = new Entity(m_ha, "input_number.agile_import_rate");
-                importEntity.CallService("set_value", new { value = import[seg].value_inc_vat });
+                importEntity.CallService("set_value", new { value = import[m_agileRateValues.currentSeg].value_inc_vat });
 
                 var exportEntity = new Entity(m_ha, "input_number.agile_export_rate");
-                exportEntity.CallService("set_value", new { value = (export[seg].value_inc_vat )});
+                exportEntity.CallService("set_value", new { value = (export[m_agileRateValues.currentSeg].value_inc_vat )});
             }
             else
             {
@@ -103,14 +108,12 @@ public class FoxBatteryControl
             return;
         }
 
-        MonitorState = CheckForScheduleStateChanges(seg);
+        MonitorState = CheckForScheduleStateChanges(m_agileRateValues.currentSeg);
     }   
 
     private void RefreshAgileRate()
     {
     }
-
-
 
     /// <summary>
     /// Looks ahead to the next segment to see if a schedule change is needed
