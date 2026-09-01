@@ -67,9 +67,14 @@
 
     private async Task DeleteSchedule()
     {
-        using var context = DbFactory.CreateDbContext();
-        context.Schedule.Remove(schedule!);
-        await context.SaveChangesAsync();
+        using (var context = DbFactory.CreateDbContext())
+        {
+            var batterModes = await context.Mode.Where(b => b.SchedualId == Id).ToListAsync();        
+            context.Mode.RemoveRange(batterModes);
+            context.Schedule.Remove(schedule!);
+            await context.SaveChangesAsync();
+        }
+
         NavigationManager.NavigateTo("/schedules");
     }
 }

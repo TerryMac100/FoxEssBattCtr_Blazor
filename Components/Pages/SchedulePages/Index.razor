@@ -3,8 +3,13 @@
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using BlazorBattControl.Models
 @using BlazorBattControl.Data
+
+@using NetDaemonMain.apps.FoxEss.FoxApiClient.Models
+
 @implements IAsyncDisposable
+
 @inject IDbContextFactory<BlazorBattControl.Data.BlazorBattControlContext> DbFactory
+@inject FoxSettings m_foxSettings
 
 <style>
     .header {
@@ -35,9 +40,17 @@
 
     <TemplateColumn Context="schedule">
         <a href="@($"schedules/edit?id={schedule.Id}")">Edit</a> |
-        <a href="@($"schedules/details?id={schedule.Id}")">Details</a>
+        <a href="@($"schedules/details?id={schedule.Id}")">Details</a> |
+
+        @if (schedule.Id != m_foxSettings.SelectedScheduleId)
+        {
+            <a href="@($"schedules/delete?id={schedule.Id}")">Delete</a>
+        }
+
     </TemplateColumn>
 </QuickGrid>
+
+<a href="schedules/create">Create New Schedule</a>
 
 @code {
 

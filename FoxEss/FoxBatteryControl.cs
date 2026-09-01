@@ -22,7 +22,7 @@ public class FoxBatteryControl
     private readonly FoxSettings m_settings;
     private readonly OctopusApiClient m_octopusApiClient;
     private readonly ILogger<FoxBatteryControl> m_logger;
-
+    private readonly ChargePlan m_chargePlan;
     private readonly INetDaemonScheduler m_scheduler;
     private readonly AgileRateValues m_agileRateValues;
 
@@ -33,13 +33,15 @@ public class FoxBatteryControl
         FoxSettings foxSettings,
         OctopusApiClient octopusApiClient,
         AgileRateValues agileRateValues,
-        ILogger<FoxBatteryControl> logger)
+        ILogger<FoxBatteryControl> logger,
+        ChargePlan chargePlan)
     {
         m_ha = ha;
         m_scheduler = scheduler;
         m_foxEssMain = foxEssMain;
         m_settings = foxSettings;
         m_logger = logger;
+        m_chargePlan = chargePlan;
         m_agileRateValues = agileRateValues;
         m_octopusApiClient = octopusApiClient;  
 
@@ -66,36 +68,9 @@ public class FoxBatteryControl
     private void RunMonitor()
     {
         var dateTimeNow = DateTime.Now;
-        //var seg = GetSegment(dateTimeNow);
 
-        //if (m_agileRateValues.export == null || m_agileRateValues.export.Count == 0)
-        m_agileRateValues.RefreshRates(dateTimeNow);
+        m_chargePlan.RefreshAgilePlan(dateTimeNow);
 
-        if (export == null || import == null)
-        {
-            import = m_octopusApiClient.GetAgileImport(dateTimeNow);
-            export = m_octopusApiClient.GetAgileExport(dateTimeNow);
-        }
-        else
-        {
-            if (m_agileRateValues.currentSeg < import.Count && m_agileRateValues.currentSeg < export.Count)
-            {
-                var importEntity = new Entity(m_ha, "input_number.agile_import_rate");
-                importEntity.CallService("set_value", new { value = import[m_agileRateValues.currentSeg].value_inc_vat });
-
-                var exportEntity = new Entity(m_ha, "input_number.agile_export_rate");
-                exportEntity.CallService("set_value", new { value = (export[m_agileRateValues.currentSeg].value_inc_vat )});
-            }
-            else
-            {
-                import = m_octopusApiClient.GetAgileImport(dateTimeNow);
-                export = m_octopusApiClient.GetAgileExport(dateTimeNow);
-            }
-        }
-
-        // When an override is active don't check the flag states in the first minute
-        // of the half and full hour to allow for the input flags to stabilize
-        // Also skip the 29th and 59th minute as it not worth setting a segment that is just about to end
         if (dateTimeNow.Minute == 0 || dateTimeNow.Minute == 30 ||
             dateTimeNow.Minute == 29 || dateTimeNow.Minute == 59)
         {
@@ -110,37 +85,6 @@ public class FoxBatteryControl
 
         MonitorState = CheckForScheduleStateChanges(m_agileRateValues.currentSeg);
     }   
-
-    private void RefreshAgileRate()
-    {
-    }
-
-    /// <summary>
-    /// Looks ahead to the next segment to see if a schedule change is needed
-    /// </summary>
-    /// <param name="dateTimeNow"></param>
-    private void LookAheadMonitor(DateTime dateTimeNow)
-    {
-        // Only look ahead on the minutes that are the last of the half and full hour
-        // Nothing happens in the first minute of the half and full hour
-        if (dateTimeNow.Minute == 0 || dateTimeNow.Minute == 30)
-            return;
-
-        var segment = GetSegment(dateTimeNow);
-        
-        // Look ahead to the next segment
-        segment += 1;
-        if (segment >= 48)
-            segment = 0;
-
-        var modes = m_foxEssMain.GetModesFromDb();
-
-        // Check to see if a schedule change is needed for the next segment
-        if (modes[segment] != m_settings.LatestModes[segment])
-        {
-            m_foxEssMain.SetScheduleFromModes(modes);
-        }
-    }
 
     public static int GetSegment(DateTime dateTime)
     {

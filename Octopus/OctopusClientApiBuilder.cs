@@ -8,8 +8,9 @@ public static class OctopusClientApiBuilder
     {
         hostBuilder.ConfigureServices(services =>
         {
-            services.AddTransient<OctopusApiClient>();
             services.AddSingleton<AgileRateValues>();
+            services.AddTransient<ChargePlan>();
+            services.AddTransient<OctopusApiClient>();
         });
 
         return hostBuilder;

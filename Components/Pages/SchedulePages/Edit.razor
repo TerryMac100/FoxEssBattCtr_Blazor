@@ -58,6 +58,10 @@ else
                 <button class="btn btn-primary save-cancel" style="float: right;" @onclick="CancelAsync">Cancel</button>
             </EditForm>
         </div>
+@*         <a href="@($"edit/plan?id={Id}")">Edit Plan</a>
+ *@        
+ 
+        <a href="@($"scheduleModes?SchedualId={Id}")">Edit Charge Plan</a>
     </div>
 }
 

@@ -1,0 +1,288 @@
+﻿@page "/edit/plan"
+@using BlazorBattControl.FoxEss
+@using BlazorBattControl.FoxEss.FoxApiClient
+@using BlazorBattControl.Data
+
+@using BlazorBattControl.Octopus
+@using BlazorBattControl.Octopus.Models
+@using NetDaemonMain.apps.FoxEss.FoxApiClient.Models
+@using System.ComponentModel
+@using static BlazorBattControl.FoxEss.FoxApiClient.FoxEssMain
+
+@using Microsoft.EntityFrameworkCore
+
+@using BlazorBattControl.Models
+@inject IDbContextFactory<BlazorBattControl.Data.BlazorBattControlContext> DbFactory
+
+@inject NavigationManager NavigationManager
+
+@inject IDbContextFactory<BlazorBattControlContext> m_dbFactory;
+
+@inject NavigationManager NavManager
+@inject FoxEssMain m_foxEssMain
+@inject FoxSettings m_foxSettings
+@inject OctopusApiClient m_octopusApiClient
+@inject AgileRateValues m_agileRateValues
+
+@implements IDisposable 
+
+@rendermode InteractiveServer
+
+
+@if (Schedule is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div style="max-width: 350px;">
+        <select class="form-control" style="width: 280px" value="@Id" @onchange="SetSelected">
+            <option value="@Schedule.Id" selected>@Schedule.Name</option>
+        </select>
+
+        <table style="width:auto;">            
+            <tr>
+                <td style="width: 100%">
+                    <button class="btn btn-primary b-margin" padding=20 hidden="@editActive" @onclick="SendSchedule">Send</button>
+                </td>
+                <td style="white-space:nowrap;">
+                    <label hidden="@editActive">@m_foxSettings.StatusMessage</label>
+                </td>
+            </tr>
+        </table>
+
+        <button class="btn btn-primary save-cancel" padding=20 hidden="@editShow" @onclick="SaveChanges">Save</button>
+        <button class="btn btn-primary save-cancel" padding=20 hidden="@editShow" @onclick="CancelChanges" style="float: right;">Cancel</button>
+        
+        
+        
+        
+        <table class="tableFixHead">
+            <thead>
+                <tr>
+                    <th class="h-text" width="80">Period</th>
+                    <th class="h-text">Charge</th>
+                    <th class="h-text">Backup</th>
+                    <th class="h-text">SelfUse</th>
+                    <th class="h-text">Feed-In</th>
+                    <th class="h-text">Dis-Chg</th>
+                    <th class="h-text">Agile I/P</th>
+                    <th class="h-text">Agile ExP</th>
+                </tr>
+            </thead>
+
+            <tbody >
+                @for (int row = 0; row < 48; row++)
+                {
+                    TimeOnly s_time = new TimeOnly(row / 2, (row % 2) * 30);
+                    TimeOnly e_time = new TimeOnly(row / 2, (row % 2) * 30);
+                    e_time = e_time.AddMinutes(29);
+                    <tr>
+                        @if (row == m_agileRateValues.currentSeg)
+                        {
+                            <td class="t-centre">
+                                <label class="h-text-bold">@s_time - @e_time</label>
+                            </td>
+                        }
+                        else
+                        {
+                            <td class="t-centre">
+                                <label class="h-text">@s_time - @e_time</label>
+                            </td>            
+                        }
+                        @{
+                            int local_row = row;
+                        }
+                        @for (int x = 0; x < 5; x++)
+                        {
+                            int _x = x;
+
+                            <td>
+                                <label class="tool_tip_radio_button" data-toggle="tooltip" data-placement="bottom" title="@buttionNames[x]">
+                                    <input type="radio" class="radio_base radio_1"
+                                    checked="@buttonStates[_x, local_row]"
+                                    name=@row onchange="@(() => OnCheckChange(local_row, _x))" />
+                                </label>
+                            </td>
+                        }
+
+                        @if (row == m_agileRateValues.currentSeg)
+                        {
+                            <td class="t-centre">
+                                <label class="h-text-bold">@m_agileRateValues.agileImport[local_row]</label>
+                            </td>
+                            <td class="t-centre">
+                                <label class="h-text-bold">@m_agileRateValues.agileExport[local_row]</label>
+                            </td>
+                        }
+                        else
+                        {
+                            <td class="t-centre">
+                                <label class="h-text">@m_agileRateValues.agileImport[local_row]</label>
+                            </td>
+                            <td class="t-centre">
+                                <label class="h-text">@m_agileRateValues.agileExport[local_row]</label>
+                            </td>                                       
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code
+{
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    private Schedule? Schedule { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        Schedule ??= await context.Schedule.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (Schedule is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }       
+    }
+
+    private bool m_editActive;
+
+    private bool editActive
+    {
+        get => m_editActive;
+        set
+        {
+            m_editActive = value;
+            StateHasChanged();
+        }
+    }
+
+    private bool[,] buttonStates = new bool[5, 48];
+
+    private bool editShow => !editActive;
+
+    private string[] buttionNames = { "Charge ", "Backup ", "SelfUse", "Feed_In", "Dis_Chg" };
+
+
+    private void SaveChanges()
+    {
+        using var dbContext = m_dbFactory.CreateDbContext();
+
+        for (int row = 0; row < 48; row++)
+        {
+            var x = 2;
+
+            if (buttonStates[0, row])
+                x = 0;
+            else if (buttonStates[1, row])
+                x = 1;
+            else if (buttonStates[3, row])
+                x = 3;
+            else if (buttonStates[4, row])
+                x = 4;
+
+            var mode = dbContext.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == Id);
+            if (mode is null)
+            {
+                mode = new BatteryMode
+                {
+                    TimeSlot = row,
+                    BattMode = x,
+                    SchedualId = Id
+                };
+                dbContext.Mode.Add(mode);
+            }
+            else
+            {
+                mode.BattMode = x;
+                dbContext.Mode.Update(mode);
+            }
+        }
+        dbContext.SaveChanges();
+
+        editActive = false;
+    }
+
+    private void CancelChanges()
+    {
+        SelectionUpdated();
+        editActive = false;
+    }
+
+    private void OnCheckChange(int row, int x)
+    {
+        for (int m = 0; m < 5; m++)
+            if (m == x)
+                buttonStates[m, row] = true;
+            else
+                buttonStates[m, row] = false;
+
+        editActive = true;
+    }
+
+    private async Task SendSchedule()
+    {
+        //await m_foxEssMain.SendSelectedScheduleAsync();
+    }
+
+    private void SetSelected(ChangeEventArgs e)
+    {
+        // if (e.Value != null)
+        //     selected = Convert.ToInt32(e.Value.ToString());
+
+        // SelectionUpdated();
+    }
+
+    private void SelectionUpdated()
+    {
+        for (int row = 0; row < 48; row++)
+        {
+            var mode = m_foxSettings.GetModeValue(row, Id);
+            for (int x = 0; x < 5; x++)
+                if (mode == (MonitorSchedule)x)
+                    buttonStates[x, row] = true;
+                else
+                    buttonStates[x, row] = false;
+        }
+
+        editActive = true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            SelectionUpdated();
+            editActive = false;
+
+            InvokeAsync(() => StateHasChanged());
+        }
+
+        SetAgileValues();
+    }
+
+    private void SetAgileValues()
+    {
+        // if (m_agileRateValues.export == null || m_agileRateValues.export.Count == 0)
+        //     m_agileRateValues.RefreshRates(DateTime.Now);
+    }
+
+    void MessageChanged(object? sender, PropertyChangedEventArgs eventArgs)
+    {
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    protected override void OnInitialized() 
+    { 
+        m_foxSettings.PropertyChanged += MessageChanged; 
+    }
+
+    public void Dispose()
+    {
+        m_foxSettings.PropertyChanged -= MessageChanged;            
+    }
+}

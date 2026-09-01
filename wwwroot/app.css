@@ -58,3 +58,103 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+
+.input-full-width {
+    width: 100%;
+}
+
+.save-cancel {
+    margin: 4px 0px;
+    width: 80px;
+}
+
+.save-cancel-right {
+    margin: 4px 0px;
+    width: 80px;
+    float: right;
+}
+
+.label-wrap {
+    display: flex;
+}
+
+.radio-enable {
+    margin: 8px 0px;
+    width: 40px;
+}
+
+
+.tool_tip_radio_button {
+    width: 30%;
+    height: 20px;
+}
+
+.radio_base[type='radio'] {
+    box-sizing: border-box;
+    appearance: none;
+    background: white;
+    outline: 2px solid #333;
+    border: 1px solid white;
+    width: 40px;
+    height: 12px;
+    vertical-align: center;
+    horisontal-align: center;
+}
+
+.save-cancel {
+    margin: 4px 0px;
+    width: 80px;
+}
+
+.b-margin {
+    margin: 4px 0px;
+}
+
+.radio_1[type='radio']:checked {
+    background: Green;
+}
+
+.h-text {
+    font-size: 10px;
+    text-align: center;
+}
+
+.h-text-bold {
+    font-size: 10px;
+    text-align: center;
+    font-weight: 900;
+}
+
+.h-row {
+    font-size: 8px;
+}
+
+.t-centre {
+    text-align: center;
+}
+
+.scrollWrapper {
+    height: 600px;
+    overflow: scroll;
+}
+
+.tableFixHead {
+    overflow: auto;
+    height: 450px;
+}
+
+    .tableFixHead thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+table {
+    border-collapse: collapse;
+}
+
+th {
+    background: #eee;
+}
+

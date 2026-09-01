@@ -1,0 +1,281 @@
+@page "/scheduleModes"
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.EntityFrameworkCore
+@using BlazorBattControl.Models
+@using BlazorBattControl.Data
+
+@using BlazorBattControl.FoxEss.FoxApiClient
+@using BlazorBattControl.Data
+@using BlazorBattControl.Octopus
+@using System.ComponentModel
+@using NetDaemon.HassModel;
+@using NetDaemonMain.apps.FoxEss.FoxApiClient.Models
+
+@using BlazorBattControl.FoxEss.FoxApiClient
+
+@inject NavigationManager NavManager
+@inject FoxEssMain m_foxEssMain
+@inject OctopusApiClient m_octopusApiClient
+@inject AgileRateValues m_agileRateValues
+@inject ChargePlan m_chargePlan
+@inject FoxSettings m_foxSettings
+@inject IHaContext m_ha
+
+@rendermode InteractiveServer
+
+@inject IDbContextFactory<BlazorBattControl.Data.BlazorBattControlContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Charge Plan</PageTitle>
+
+<h1>Charge Plan</h1>
+ <div style="max-width: 350px;">
+    <select class="form-control" style="width: 280px" value="@SchedualId">
+        @foreach (var schedule in m_foxSettings.AllSchedules.OrderBy(m => m.Id))
+        {
+            if (schedule.Id == SchedualId)
+            {
+                // Select the selected schedule:
+                <option value="@schedule.Id" selected>@schedule.Name</option>
+            }
+        }
+    </select> 
+    
+    <table style="width:auto;">            
+        <tr>
+            <td style="width: 100%">
+                <button class="btn btn-primary b-margin" padding=20 hidden="@editActive" @onclick="SendSchedule">Send</button>
+            </td>
+            <td style="white-space:nowrap;">
+                <label hidden="@editActive">@m_foxSettings.StatusMessage</label>
+            </td>
+        </tr>
+    </table>
+
+    <button class="btn btn-primary save-cancel" padding=20 hidden="@editShow" @onclick="SaveChanges">Save</button>
+    <button class="btn btn-primary save-cancel" padding=20 hidden="@editShow" @onclick="CancelChanges" style="float: right;">Cancel</button>
+
+    <table class="tableFixHead">
+        <thead>
+            <tr>
+                <th class="h-text" width="80">Period</th>
+                <th class="h-text">Charge</th>
+                <th class="h-text">Backup</th>
+                <th class="h-text">SelfUse</th>
+                <th class="h-text">Feed-In</th>
+                <th class="h-text">Dis-Chg</th>
+                <th class="h-text">Agile I/P</th>
+                <th class="h-text">Agile ExP</th>
+            </tr>
+        </thead>
+
+        <tbody >
+        @for (int row = 0; row < 48; row++)
+        {
+            TimeOnly s_time = new TimeOnly(row / 2, (row % 2) * 30);
+            TimeOnly e_time = new TimeOnly(row / 2, (row % 2) * 30);
+            e_time = e_time.AddMinutes(29);
+                <tr>
+                @if (row == m_agileRateValues.currentSeg)
+                {
+                    <td class="t-centre">
+                        <label class="h-text-bold">@s_time - @e_time</label>
+                    </td>
+                }
+                else
+                {
+                    <td class="t-centre">
+                        <label class="h-text">@s_time - @e_time</label>
+                    </td>            
+                }
+                @{
+                    int local_row = row;
+                }
+                @for (int x = 0; x < 5; x++)
+                {
+                    int _x = x;
+
+                    <td>
+                        <label class="tool_tip_radio_button" data-toggle="tooltip" data-placement="bottom" title="@m_chargePlan.ButtonNames[x]">
+                            <input type="radio" class="radio_base radio_1"
+                                       checked="@buttonStates[_x, local_row]"
+                                    name=@row onchange="@(() => OnCheckChange(local_row, _x))" />
+                        </label>
+                    </td>
+                }
+
+                @if (row == m_agileRateValues.currentSeg)
+                {
+                    <td class="t-centre">
+                            <label class="h-text-bold">@m_agileRateValues.agileImport[local_row]</label>
+                    </td>
+                    <td class="t-centre">
+                            <label class="h-text-bold">@m_agileRateValues.agileExport[local_row]</label>
+                    </td>
+                }
+                else
+                {
+                    <td class="t-centre">
+                        <label class="h-text">@m_agileRateValues.agileImport[local_row]</label>
+                    </td>
+                    <td class="t-centre">
+                        <label class="h-text">@m_agileRateValues.agileExport[local_row]</label>
+                    </td>                                       
+                }
+            </tr>
+        } 
+        </tbody>
+    </table>
+</div>
+
+ @code 
+ {
+    [SupplyParameterFromQuery]
+    private int SchedualId { get; set; }
+
+    private BlazorBattControlContext context = default!;
+        
+    private bool m_editActive;
+
+    private bool editActive
+    {
+        get => m_editActive;
+        set
+        {
+            m_editActive = value;
+            StateHasChanged();
+        }
+    }
+
+    private bool editShow => !editActive;
+
+    private async Task SaveChanges()
+    {
+        using (var dbContext = DbFactory.CreateDbContext())
+        {
+            for (int row = 0; row < 48; row++)
+            {
+                var x = 2;
+
+                if (buttonStates[0, row])
+                    x = 0;
+                else if (buttonStates[1, row])
+                    x = 1;
+                else if (buttonStates[3, row])
+                    x = 3;
+                else if (buttonStates[4, row])
+                    x = 4;
+
+                var mode = dbContext.Mode.FirstOrDefault(m => m.TimeSlot == row && m.SchedualId == SchedualId);
+                if (mode is null)
+                {
+                    mode = new BatteryMode
+                        {
+                            TimeSlot = row,
+                            BattMode = x,
+                            SchedualId = SchedualId
+                        };
+                    dbContext.Mode.Add(mode);
+                }
+                else
+                {
+                    if (x != (int)mode.BattMode)
+                    {
+                        mode.BattMode = x;
+                        dbContext.Mode.Attach(mode).State = EntityState.Modified;
+                    }
+                }
+            }
+            await dbContext.SaveChangesAsync();
+        }
+
+        editActive = false;
+    }
+
+    private void CancelChanges()
+    {
+        SelectionUpdated();
+        editActive = false;
+    }
+
+    private void SelectionUpdated()
+    {
+        for (int row = 0; row < 48; row++)
+        {
+            var mode = m_foxSettings.GetModeValue(row, SchedualId);
+            for (int x = 0; x < 5; x++)
+                if ((int)mode == x)
+                    buttonStates[x, row] = true;
+                else
+                    buttonStates[x, row] = false;
+        }
+    }
+
+    private async Task SendSchedule()
+    {
+        await m_foxEssMain.SendSelectedScheduleAsync();
+    }
+
+    private bool[,] buttonStates = new bool[5, 48];
+
+    private void OnCheckChange(int row, int x)
+    {              
+        for (int m = 0; m < 5; m++)
+            if (m == x)
+                buttonStates[m, row] = true;
+            else
+                buttonStates[m, row] = false;
+
+        editActive = true;
+    }
+
+    protected override void OnInitialized()
+    {
+        using (var dbContext = DbFactory.CreateDbContext())
+        {                
+            for (int i = 0; i < 48; i++)
+            {
+                if (!dbContext.Mode.Any(m => m.SchedualId == SchedualId && m.TimeSlot == i))
+                {
+                    var newMode = new BatteryMode
+                    {
+                        SchedualId = SchedualId,
+                        TimeSlot = i
+                        // BattMode = "Default" = 2
+                    };
+                    dbContext.Mode.Add(newMode);
+                }
+                else
+                {
+                    if (dbContext.Mode.Count(m => m.SchedualId == SchedualId && m.TimeSlot == i) > 1)
+                    {
+                        // Handle the case where there are multiple entries for the same TimeSlot
+                        // You can choose to delete duplicates or log a warning, depending on your requirements
+                        var duplicateModes = dbContext.Mode.Where(m => m.SchedualId == SchedualId && m.TimeSlot == i).ToList();
+                        // For example, you could keep the first one and remove the rest:
+                        var modeToKeep = duplicateModes.First();
+                        foreach (var duplicate in duplicateModes.Skip(1))
+                        {
+                            dbContext.Mode.Remove(duplicate);
+                        }
+                    }
+                }
+            }
+
+            dbContext.SaveChanges();
+
+            for (int i = 0; i < 48; i++)
+            {                           
+                var mode = dbContext.Mode.Where(m => m.SchedualId == SchedualId && m.TimeSlot == i).FirstOrDefault()?.BattMode;
+
+                for (int m = 0; m < 5; m++)
+                {
+                    if (mode == m)
+                        buttonStates[m, i] = true;
+                    else
+                        buttonStates[m, i] = false;
+                }
+            }
+        }                 
+    }
+}
