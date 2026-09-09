@@ -44,6 +44,23 @@ namespace BlazorBattControl.Data
                 }
             }
         }
+
+        public float MaxImportPrice
+        {
+            get => m_agileRateValues.m_maxImportPrice;
+            set
+            {
+
+                if (m_agileRateValues.m_maxImportPrice != value)
+                {
+                    m_agileRateValues.m_maxImportPrice = value;
+                    var importEntity = new Entity(m_ha, "input_number.agile_buy_rate");
+                    importEntity.CallService("set_value", new { value = m_agileRateValues.m_maxImportPrice });
+                }
+            }
+        }
+
+
         private void RefreshAgileRates()
         {
             if (m_agileRateValues.export != null && m_agileRateValues.import != null)
@@ -62,6 +79,7 @@ namespace BlazorBattControl.Data
             RefreshAgileRates();
 
             SetMinimumExportPrice(dateTimeNow);
+            SetMaximumImportSlots(dateTimeNow);
         }
 
         public void SetMinimumExportPrice(DateTime today)
@@ -99,6 +117,54 @@ namespace BlazorBattControl.Data
             }
         }
 
+        public void SetMaximumImportSlots(DateTime today)
+        {
+            var tomorrow = today.AddDays(1);
+
+            var importPrices = m_agileRateValues.import.Where(x => x.valid_from.Day == tomorrow.Day).OrderBy(x => x.value_inc_vat).ToList();
+
+            // check if tomorrows import prices are available, don't bother if not
+            if (importPrices.Count == 0)
+                return;
+
+            var segString = new Entity(m_ha, "input_select.agile_import_time");
+
+            int segs = 0;
+
+            switch (segString.State)
+            {
+                case "0:30":
+                    segs = 1;
+                    break;
+                case "1:00":
+                    segs = 2;
+                    break;
+                case "1:30":
+                    segs = 3;
+                    break;
+                case "2:00":
+                    segs = 4;
+                    break;
+                case "2:30":
+                    segs = 5;
+                    break;
+                case "3:00":
+                    segs = 6;
+                    break;
+                case "3:30":
+                    segs = 7;
+                    break;
+                case "4:00":
+                    segs = 8;
+                    break;
+            }
+
+            if (importPrices.Count > segs)
+            {
+                MaxImportPrice = importPrices[segs].value_inc_vat;
+            }
+        }
+
         public void SetAgileExportSlots(bool[,] buttonStates)
         {
             for (int row = 0; row < 48; row++)
@@ -106,6 +172,17 @@ namespace BlazorBattControl.Data
                 if (row < m_agileRateValues.export.Count && m_agileRateValues.export[row].value_inc_vat > MinExportPrice)
                 {
                     buttonStates[4, row] = true;
+                }
+            }
+        }
+
+        public void SetAgileImportSlots(bool[,] buttonStates)
+        {
+            for (int row = 0; row < 48; row++)
+            {
+                if (row + 48 < m_agileRateValues.import.Count && m_agileRateValues.import[row + 48].value_inc_vat < MaxImportPrice)
+                {
+                    buttonStates[1, row] = true;
                 }
             }
         }

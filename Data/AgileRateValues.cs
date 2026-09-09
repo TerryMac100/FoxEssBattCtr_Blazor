@@ -109,6 +109,7 @@ namespace BlazorBattControl.Data
         /// Saved here as this is a singleton value.
         /// </summary>
         public float m_minExportPrice;
+        public float m_maxImportPrice;
 
         public int currentSeg = -1;
 

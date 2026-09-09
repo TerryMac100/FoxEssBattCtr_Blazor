@@ -23,7 +23,7 @@
 <PageTitle>Charge Plan</PageTitle>
 <h1>Charge Plan</h1>
 
-@if (m_foxSettings.StatusMessage is null)
+@if (buttonStates is null)
 {
     <p><em>Loading...</em></p>
 }
@@ -137,6 +137,8 @@ else
 
 @code
 {
+    private string? Message = null;
+
     private int _selected;
     private int selected 
     { 
@@ -195,32 +197,72 @@ else
         InvokeAsync(() => StateHasChanged());
     }
 
-    private bool[,] buttonStates = new bool[5, 48];
+    private bool[,] buttonStates = null;
 
     private void SetScheduleValues()
     {
         m_chargePlan.InitializedSchedule(selected);
 
+        bool[,] buttons = new bool[5, 48];
+
         using (var dbContext = DbFactory.CreateDbContext())
-        {                 
+        {
             for (int i = 0; i < 48; i++)
             {
-                var mode = dbContext.Mode.Where(m => m.SchedualId == selected && m.TimeSlot == i).FirstOrDefault()?.BattMode;
+                var modeEntry = dbContext.Mode.Where(m => m.SchedualId == selected && m.TimeSlot == i).FirstOrDefault();
 
-                for (int m = 0; m < 5; m++)
+                if (modeEntry == null)
                 {
-                    if (mode == m)
-                        buttonStates[m, i] = true;
-                    else
-                        buttonStates[m, i] = false;
+                    buttons[2, i] = true;
+                }
+                else
+                {
+                    var mode = modeEntry?.BattMode;
+
+                    switch (mode)
+                    {
+                        case 0:
+                            buttons[0, i] = true;
+                            break;
+                        case 1:
+                            buttons[1, i] = true;
+                            break;
+                        case 2:
+                            buttons[2, i] = true;
+                            break;
+                        case 3:
+                            buttons[3, i] = true;
+                            break;
+                        case 4:
+                            buttons[4, i] = true;
+                            break;
+                        default:
+                            buttons[2, i] = true; // Default to SelfUse if mode is invalid
+                            break;
+                    }
+
+                    // for (int m = 0; m < 5; m++)
+                    // {
+                    //     if (mode == m)
+                    //         buttonStates[m, i] = true;
+                    //     else
+                    // }      buttonStates[m, i] = false;
                 }
             }
         }
 
-        m_chargePlan.SetAgileExportSlots(buttonStates);
+        m_chargePlan.SetAgileExportSlots(buttons);
+
+        m_chargePlan.SetAgileImportSlots(buttons);
+
+        buttonStates = buttons;
 
         InvokeAsync(() => StateHasChanged());
+
     }
+
+    private List<int>? Modes;
+
 
     protected override void OnAfterRender(bool firstRender)
     {
@@ -228,6 +270,9 @@ else
         {
             _selected = m_foxSettings.SelectedScheduleId;
             SetScheduleValues();
+
+            Message = "Running";
+            InvokeAsync(() => StateHasChanged());
         }
     }
 }
