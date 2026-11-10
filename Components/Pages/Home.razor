@@ -6,7 +6,10 @@
 @using BlazorBattControl.Octopus
 @using System.ComponentModel
 @using NetDaemon.HassModel;
+@using NetDaemon.HassModel.Entities
 @using NetDaemonMain.apps.FoxEss.FoxApiClient.Models
+
+@implements IDisposable
 
 @inject NavigationManager NavManager
 @inject FoxEssMain m_foxEssMain
@@ -61,6 +64,15 @@ else
         <button class="btn btn-primary save-cancel" padding=20 hidden="@editShow" @onclick="SaveChanges">Save</button>   
         <button class="btn btn-primary save-cancel" padding=20 hidden="@editShow" @onclick="CancelChanges" style="float: right;">Cancel</button>
 
+        <label class="form-check-label">
+            <input class="form-check-input" type="checkbox" checked="@agileExportEnabled" @onchange="SetAgileExportEnabled" />
+            Agile Export
+        </label>
+        <label class="form-check-label" style="margin-left: 1rem;">
+            <input class="form-check-input" type="checkbox" checked="@agileImportEnabled" @onchange="SetAgileImportEnabled" />
+            Agile Import
+        </label>
+
         <table class="tableFixHead">
             <thead>
                 <tr>
@@ -76,8 +88,13 @@ else
             </thead>
 
             <tbody >
-            @for (int row = 0; row < 48; row++)
+            @{
+                int currentTimeSlot = m_agileRateValues.currentSeg;
+                int firstTimeSlot = currentTimeSlot >= 0 && currentTimeSlot < 48 ? currentTimeSlot : 0;
+            }
+            @for (int displayRow = 0; displayRow < 48; displayRow++)
             {
+                int row = (firstTimeSlot + displayRow) % 48;
                 TimeOnly s_time = new TimeOnly(row / 2, (row % 2) * 30);
                 TimeOnly e_time = new TimeOnly(row / 2, (row % 2) * 30);
                 e_time = e_time.AddMinutes(29);
@@ -103,7 +120,7 @@ else
 
                         <td>
                             <label class="tool_tip_radio_button" data-toggle="tooltip" data-placement="bottom" title="@m_chargePlan.ButtonNames[x]">
-                                <input type="radio" class="radio_base radio_1"
+                                <input @key="(scheduleValuesVersion, local_row, _x)" type="radio" class="radio_base radio_1"
                                            checked="@buttonStates[_x, local_row]"
                                         name=@row onchange="@(() => OnCheckChange(local_row, _x))" />
                             </label>
@@ -138,6 +155,57 @@ else
 @code
 {
     private string? Message = null;
+    private bool agileExportEnabled;
+    private bool agileImportEnabled;
+    private IDisposable? agileExportSubscription;
+    private IDisposable? agileImportSubscription;
+
+    protected override void OnInitialized()
+    {
+        var agileExportEntity = m_ha.Entity("input_boolean.agile_export_enable");
+        agileExportEnabled = agileExportEntity.State == "on";
+        agileExportSubscription = agileExportEntity.StateChanges().Subscribe(change =>
+            _ = InvokeAsync(() =>
+            {
+                agileExportEnabled = change.New?.State == "on";
+                if (buttonStates is not null)
+                    SetScheduleValues();
+                StateHasChanged();
+            }));
+
+        var agileImportEntity = m_ha.Entity("input_boolean.agile_import_enable");
+        agileImportEnabled = agileImportEntity.State == "on";
+        agileImportSubscription = agileImportEntity.StateChanges().Subscribe(change =>
+            _ = InvokeAsync(() =>
+            {
+                agileImportEnabled = change.New?.State == "on";
+                if (buttonStates is not null)
+                    SetScheduleValues();
+                StateHasChanged();
+            }));
+    }
+
+    private void SetAgileExportEnabled(ChangeEventArgs e)
+    {
+        agileExportEnabled = e.Value is bool enabled && enabled;
+        m_ha.Entity("input_boolean.agile_export_enable")
+            .CallService(agileExportEnabled ? "turn_on" : "turn_off");
+        SetScheduleValues();
+    }
+
+    private void SetAgileImportEnabled(ChangeEventArgs e)
+    {
+        agileImportEnabled = e.Value is bool enabled && enabled;
+        m_ha.Entity("input_boolean.agile_import_enable")
+            .CallService(agileImportEnabled ? "turn_on" : "turn_off");
+        SetScheduleValues();
+    }
+
+    public void Dispose()
+    {
+        agileExportSubscription?.Dispose();
+        agileImportSubscription?.Dispose();
+    }
 
     private int _selected;
     private int selected 
@@ -198,6 +266,7 @@ else
     }
 
     private bool[,] buttonStates = null;
+    private int scheduleValuesVersion;
 
     private void SetScheduleValues()
     {
@@ -240,29 +309,23 @@ else
                             buttons[2, i] = true; // Default to SelfUse if mode is invalid
                             break;
                     }
-
-                    // for (int m = 0; m < 5; m++)
-                    // {
-                    //     if (mode == m)
-                    //         buttonStates[m, i] = true;
-                    //     else
-                    // }      buttonStates[m, i] = false;
                 }
             }
         }
 
-        m_chargePlan.SetAgileExportSlots(buttons);
+        if (agileExportEnabled)
+            m_chargePlan.SetAgileExportSlots(buttons);
 
-        m_chargePlan.SetAgileImportSlots(buttons);
+        if (agileImportEnabled)
+            m_chargePlan.SetAgileImportSlots(buttons);
 
         buttonStates = buttons;
+        scheduleValuesVersion++;
 
-        InvokeAsync(() => StateHasChanged());
-
+        //InvokeAsync(() => StateHasChanged());
     }
 
     private List<int>? Modes;
-
 
     protected override void OnAfterRender(bool firstRender)
     {

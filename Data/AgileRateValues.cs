@@ -21,9 +21,6 @@ namespace BlazorBattControl.Data
 
         public void RefreshRates(DateTime now)
         {
-            // "sensor.current_agile_export_rate"
-
-
             var seg = FoxBatteryControl.GetSegment(now);
 
             if (seg != currentSeg || export.Count == 0)
