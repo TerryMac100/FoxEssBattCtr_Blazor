@@ -68,7 +68,7 @@ else
             <input class="form-check-input" type="checkbox" checked="@agileExportEnabled" @onchange="SetAgileExportEnabled" />
             Agile Export
         </label>
-        <label class="form-check-label" style="margin-left: 1rem;">
+        <label class="form-check-label" style="float: right;">
             <input class="form-check-input" type="checkbox" checked="@agileImportEnabled" @onchange="SetAgileImportEnabled" />
             Agile Import
         </label>
@@ -253,11 +253,19 @@ else
 
     private void OnCheckChange(int row, int x)
     {
+        if (buttonStates is null || row < 0 || row >= 48 || x < 0 || x >= 5)
+            return;
+
+        for (int mode = 0; mode < 5; mode++)
+            buttonStates[mode, row] = mode == x;
+
+        scheduleModes[row] = (FoxEssMain.MonitorSchedule)x;
+        scheduleValuesVersion++;
     }
 
-    private async Task SendSchedule()
+    private void SendSchedule()
     {
-        await m_foxEssMain.SendSelectedScheduleAsync();
+        m_foxEssMain.SetScheduleFromModes(scheduleModes);
     }
 
     void MessageChanged(object? sender, PropertyChangedEventArgs eventArgs)
@@ -266,6 +274,7 @@ else
     }
 
     private bool[,] buttonStates = null;
+    private FoxEssMain.MonitorSchedule[] scheduleModes = new FoxEssMain.MonitorSchedule[48];
     private int scheduleValuesVersion;
 
     private void SetScheduleValues()
@@ -280,36 +289,12 @@ else
             {
                 var modeEntry = dbContext.Mode.Where(m => m.SchedualId == selected && m.TimeSlot == i).FirstOrDefault();
 
-                if (modeEntry == null)
-                {
-                    buttons[2, i] = true;
-                }
-                else
-                {
-                    var mode = modeEntry?.BattMode;
+                var mode = modeEntry?.BattMode ?? (int)FoxEssMain.MonitorSchedule.SelfUsePeriod;
+                if (mode < 0 || mode > 4)
+                    mode = (int)FoxEssMain.MonitorSchedule.SelfUsePeriod;
 
-                    switch (mode)
-                    {
-                        case 0:
-                            buttons[0, i] = true;
-                            break;
-                        case 1:
-                            buttons[1, i] = true;
-                            break;
-                        case 2:
-                            buttons[2, i] = true;
-                            break;
-                        case 3:
-                            buttons[3, i] = true;
-                            break;
-                        case 4:
-                            buttons[4, i] = true;
-                            break;
-                        default:
-                            buttons[2, i] = true; // Default to SelfUse if mode is invalid
-                            break;
-                    }
-                }
+                scheduleModes[i] = (FoxEssMain.MonitorSchedule)mode;
+                buttons[mode, i] = true;
             }
         }
 
@@ -319,10 +304,23 @@ else
         if (agileImportEnabled)
             m_chargePlan.SetAgileImportSlots(buttons);
 
+        for (int row = 0; row < 48; row++)
+        {
+            int selectedMode = (int)FoxEssMain.MonitorSchedule.SelfUsePeriod;
+            for (int mode = 0; mode < 5; mode++)
+            {
+                if (buttons[mode, row])
+                    selectedMode = mode;
+            }
+
+            for (int mode = 0; mode < 5; mode++)
+                buttons[mode, row] = mode == selectedMode;
+
+            scheduleModes[row] = (FoxEssMain.MonitorSchedule)selectedMode;
+        }
+
         buttonStates = buttons;
         scheduleValuesVersion++;
-
-        //InvokeAsync(() => StateHasChanged());
     }
 
     private List<int>? Modes;

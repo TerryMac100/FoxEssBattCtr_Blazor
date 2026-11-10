@@ -30,34 +30,20 @@ namespace BlazorBattControl.Data
                 export = m_octopusApiClient.GetAgileExport(now);
                 import = m_octopusApiClient.GetAgileImport(now);
 
-                SetAgileValues();
+                SetAgileValues(now);
             }
         }
 
-        private void SetAgileValues()
+        private void SetAgileValues(DateTime now)
         {
             for (int row = 0; row < 48; row++)
             {
-                if (row < export.Count)
-                    agileExport[row] = export[row].value_inc_vat.ToString("0.00");
+                var slotDate = now.Date.AddDays(row < currentSeg ? 1 : 0).AddMinutes(row * 30);
+                var exportSlot = export.FirstOrDefault(rate => rate.valid_from.ToLocalTime() == slotDate);
+                var importSlot = import.FirstOrDefault(rate => rate.valid_from.ToLocalTime() == slotDate);
 
-                if (row < import.Count)
-                    agileImport[row] = import[row].value_inc_vat.ToString("0.00");
-            }
-
-            for (int row = 0; row < 48; row++)
-            {
-                var seg = row;
-                if (row < currentSeg)
-                {
-                    seg += 48;
-                }
-
-                if (seg < export.Count)
-                    agileExport[row] = export[seg].value_inc_vat.ToString("0.00");
-
-                if (seg < import.Count)
-                    agileImport[row] = import[seg].value_inc_vat.ToString("0.00");
+                agileExport[row] = exportSlot?.value_inc_vat.ToString("0.00");
+                agileImport[row] = importSlot?.value_inc_vat.ToString("0.00");
             }
         }
               
