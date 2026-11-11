@@ -95,10 +95,15 @@ public class FoxBatteryControl
         return seg;
     }
 
-    private bool m_foxChargeActive => new Entity(m_ha, m_settings.OffPeakFlagEntityID).State == "on";
-    private bool m_foxBackupActive => new Entity(m_ha, m_settings.BackupFlagEntityID).State == "on";
-    private bool m_foxFeedInActive => new Entity(m_ha, m_settings.FeedInPriorityFlagEntityID).State == "on";
-    private bool m_foxDischargeActive => new Entity(m_ha, m_settings.DischargeFlagEntityID).State == "on";
+    //private bool m_foxChargeActive => new Entity(m_ha, m_settings.OffPeakFlagEntityID).State == "on";
+    //private bool m_foxBackupActive => new Entity(m_ha, m_settings.BackupFlagEntityID).State == "on";
+    //private bool m_foxFeedInActive => new Entity(m_ha, m_settings.FeedInPriorityFlagEntityID).State == "on";
+    //private bool m_foxDischargeActive => new Entity(m_ha, m_settings.DischargeFlagEntityID).State == "on";
+
+    private bool m_foxChargeActive => new Entity(m_ha, "binary_sensor.force_charge").State == "on";
+    private bool m_foxBackupActive => new Entity(m_ha, "binary_sensor.force_backup").State == "on";
+    private bool m_foxFeedInActive => new Entity(m_ha, "binary_sensor.force_feed_in_priority").State == "on";
+    private bool m_foxDischargeActive => new Entity(m_ha, "binary_sensor.force_discharge").State == "on";
 
     /// <summary>
     /// Determines the current schedule state for the specified segment and updates the schedule if a state change is
